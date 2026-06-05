@@ -316,7 +316,7 @@ let musicFineBPM=0; // user fine-tune offset in BPM
 const BASE_MUSIC_OFFSET=0.25;   // calibrated zero point (displayed as ±0)
 let musicStartOffsetBeats=BASE_MUSIC_OFFSET;
 let musicPhaseOffset=0; // phase offset 0.0–1.0 (fraction of one beat)
-let ptimer=null, playing=false, musicStartAt=0;
+let ptimer=null, playing=false, musicStartAt=0, progMusicDur=0;
 let detectedBPM=0, loopStart=0, loopDur=0;
 const CROSSFADE_MS=80;
 const INTRO_BARS=4;  // bars of heart-only intro (1 bar = 4 beats)
@@ -1349,8 +1349,10 @@ function buildWombSrc(ctx){
     const s=ctx.createBufferSource();
     s.buffer=rawBuffer;
     s.loop=true;
-    s.loopStart=loopStart;
-    s.loopEnd=loopStart+loopDur;
+    s.loopStart=Math.max(0, loopStart);
+    s.loopEnd=Math.min(rawBuffer.duration-0.01, loopStart+loopDur);
+    // Safety: ensure loop is at least 1 second long
+    if(s.loopEnd-s.loopStart < 1.0) s.loopEnd=Math.min(rawBuffer.duration-0.01, s.loopStart+Math.max(loopDur,1.0));
     s.connect(out);
     s.start(0,loopStart);
     out._x=()=>{try{s.stop();}catch(e){}};
@@ -1497,8 +1499,11 @@ function startAll(){
   wSrc=buildWombSrc(ctx); wSrc.connect(wGain); wGain.connect(ctx.destination);
 
   if(cm!=='none'){
-    // Music starts exactly at bar 9 — always on a beat boundary → perfect sync
     musicStartAt=ctx.currentTime+introSec;
+    // Fix music duration at start time to keep progress bar stable
+    progMusicDur = musicFileBuffer
+      ? musicFileBuffer.duration / Math.max(0.1, calcPlaybackRate())
+      : 0;
     mGain=ctx.createGain(); mGain.gain.value=parseInt(document.getElementById('vM').value)/100;
     mSrc=buildMusicSrc(ctx,musicStartAt);
     if(mSrc){mSrc.connect(mGain); mGain.connect(ctx.destination);}
@@ -1546,9 +1551,8 @@ function startProg(){
     if(!playing||!AC) return;
     const now=AC.currentTime;
     let pct=0;
-    if(musicFileBuffer && now>=musicStartAt){
-      const realDur=musicFileBuffer.duration/Math.max(0.1,calcPlaybackRate());
-      pct=((now-musicStartAt)%realDur)/realDur*100;
+    if(progMusicDur>0 && now>=musicStartAt){
+      pct=((now-musicStartAt)%progMusicDur)/progMusicDur*100;
     }
     document.getElementById('pfill').style.width=pct+'%';
   },80);
