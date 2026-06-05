@@ -227,8 +227,8 @@ input[type=range]{flex:1;accent-color:#D4537E;}
       <i class="ti ti-music" style="color:#0F6E56;"></i><span id="musicUpName">—</span>
     </div>
     <div class="divider"></div>
-    <div class="srow"><span class="slbl" id="T15">Womb sound</span><input type="range" id="vW" min="0" max="150" value="35" step="1" oninput="onSlider('vW','vWv','%')"><span class="sval" id="vWv">35%</span></div>
-    <div class="srow"><span class="slbl" id="T16">Music</span><input type="range" id="vM" min="0" max="150" value="80" step="1" oninput="onSlider('vM','vMv','%')"><span class="sval" id="vMv">80%</span></div>
+    <div class="srow"><span class="slbl" id="T15">Womb sound</span><input type="range" id="vW" min="0" max="150" value="50" step="1" oninput="onSlider('vW','vWv','%')"><span class="sval" id="vWv">50%</span></div>
+    <div class="srow"><span class="slbl" id="T16">Music</span><input type="range" id="vM" min="0" max="150" value="75" step="1" oninput="onSlider('vM','vMv','%')"><span class="sval" id="vMv">75%</span></div>
     <div class="srow" id="tempoRow" style="display:none"><span class="slbl" id="T17">Tempo</span><input type="range" id="vT" min="60" max="140" value="80" step="1" oninput="onSlider('vT','vTv',' bpm')"><span class="sval" id="vTv">80 bpm</span></div>
     <div class="srow" id="musicBpmRow">
       <span class="slbl" id="T17b">Music BPM</span>
@@ -1624,7 +1624,7 @@ function dlAudio(){
     const ws=off.createBufferSource(); ws.buffer=wb; ws.connect(wg); ws.start(0);
   }
 
-  if(cm==='file'&&musicFileBuffer){
+  if(musicFileBuffer){
     const ms=off.createBufferSource(); ms.buffer=musicFileBuffer; ms.loop=true;
     ms.playbackRate.value=calcPlaybackRate();
     ms.connect(mg); ms.start(0);
