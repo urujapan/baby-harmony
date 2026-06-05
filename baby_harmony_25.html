@@ -85,7 +85,8 @@ input[type=range]{flex:1;accent-color:#D4537E;}
 .pbtn:hover{background:#993556;transform:scale(1.05);}
 .np{font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:#333;margin-bottom:.2rem;}
 .npsub{font-size:12px;color:#888;}
-.pbar{width:100%;height:3px;background:#eee;border-radius:2px;margin:1rem 0 .5rem;overflow:hidden;}
+.pbar{width:100%;height:6px;background:#eee;border-radius:3px;margin:1rem 0 .25rem;overflow:hidden;transition:height .15s;}
+.pbar:hover{height:8px;}
 .pfill{height:100%;width:0%;background:#D4537E;border-radius:2px;transition:width .1s;}
 .ginput{width:100%;padding:12px 16px;border:1px solid #eee;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:14px;color:#333;background:white;margin-bottom:.75rem;outline:none;}
 .ginput:focus{border-color:#D4537E;}
@@ -258,7 +259,10 @@ input[type=range]{flex:1;accent-color:#D4537E;}
     <button class="pbtn" onclick="togglePlay()"><i class="ti ti-player-play" id="pico"></i></button>
     <div class="np" id="npTitle">Ready to play</div>
     <div class="npsub" id="npSub">Heartbeat × Lullaby</div>
-    <div class="pbar"><div class="pfill" id="pfill"></div></div>
+    <div class="pbar" id="pbarWrap" onclick="seekMusic(event)" style="cursor:pointer;"><div class="pfill" id="pfill"></div></div>
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:#aaa;margin-top:3px;">
+      <span id="timeNow">0:00</span><span id="timeTotal">—</span>
+    </div>
   </div>
 </div>
 
@@ -397,7 +401,7 @@ document.getElementById('fi').addEventListener('change',function(){
   const reader=new FileReader();
   reader.onload=function(e){
     AC.decodeAudioData(e.target.result,function(buf){
-      normalizeBuffer(buf, 0.10); // normalize heart sound
+      normalizeBuffer(buf, 0.07); // normalize heart sound (gentle)
       rawBuffer=buf; cs='uploaded';
       document.querySelectorAll('.sbtn').forEach(b=>b.classList.remove('active'));
       document.getElementById('upinfo').style.display='flex';
@@ -428,7 +432,7 @@ function normalizeBuffer(buffer, targetRMS){
   }
   const rms=Math.sqrt(sumSq/Math.max(1,count));
   if(rms<0.0001) return buffer; // silent, skip
-  const gain=Math.min(targetRMS/rms, 20); // cap at 20× to avoid wild amplification
+  const gain=Math.min(targetRMS/rms, 4); // cap at 4× to avoid over-amplification
   for(let ch=0;ch<buffer.numberOfChannels;ch++){
     const d=buffer.getChannelData(ch);
     for(let i=0;i<d.length;i++) d[i]=Math.max(-0.99,Math.min(0.99,d[i]*gain));
@@ -1538,6 +1542,8 @@ function stopAll(){
   document.getElementById('pico').className='ti ti-player-play';
   document.getElementById('npTitle').textContent=READY[cl];
   document.getElementById('pfill').style.width='0%';
+  document.getElementById('timeNow').textContent='0:00';
+  document.getElementById('timeTotal').textContent='—';
 }
 
 function togglePlay(){
@@ -1545,17 +1551,42 @@ function togglePlay(){
   if(playing){stopAll();playing=false;}else{startAll();playing=true;}
 }
 
+function fmtTime(sec){
+  const s=Math.floor(sec%60); return Math.floor(sec/60)+':'+(s<10?'0':'')+s;
+}
+
 function startProg(){
   clearInterval(ptimer);
+  document.getElementById('timeTotal').textContent = progMusicDur>0 ? fmtTime(progMusicDur) : '—';
   ptimer=setInterval(()=>{
     if(!playing||!AC) return;
     const now=AC.currentTime;
-    let pct=0;
+    let pct=0, elapsed=0;
     if(progMusicDur>0 && now>=musicStartAt){
-      pct=((now-musicStartAt)%progMusicDur)/progMusicDur*100;
+      elapsed=(now-musicStartAt)%progMusicDur;
+      pct=elapsed/progMusicDur*100;
     }
     document.getElementById('pfill').style.width=pct+'%';
+    document.getElementById('timeNow').textContent=fmtTime(elapsed);
   },80);
+}
+
+function seekMusic(e){
+  if(!playing||progMusicDur<=0||!musicFileBuffer||!AC||!mGain) return;
+  const bar=document.getElementById('pbarWrap');
+  const frac=Math.max(0,Math.min(1,(e.clientX-bar.getBoundingClientRect().left)/bar.clientWidth));
+  const newRealPos=frac*progMusicDur;
+  const rate=calcPlaybackRate();
+  const fileOffset=((calcPhaseOffsetSec()+newRealPos*rate)%musicFileBuffer.duration+musicFileBuffer.duration)%musicFileBuffer.duration;
+  musicStartAt=AC.currentTime-newRealPos;
+  // Stop old music source and start from new position
+  if(mSrc&&mSrc._x) mSrc._x();
+  const out=AC.createGain();
+  const s=AC.createBufferSource();
+  s.buffer=musicFileBuffer; s.loop=true; s.playbackRate.value=rate;
+  s.connect(out); s.start(0,fileOffset);
+  out._src=s; out._x=()=>{try{s.stop();}catch(er){}};
+  out.connect(mGain); mSrc=out;
 }
 
 // ── Download audio ────────────────────────────────────────────────────────
