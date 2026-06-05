@@ -316,7 +316,7 @@ let musicFineBPM=0; // user fine-tune offset in BPM
 const BASE_MUSIC_OFFSET=0.25;   // calibrated zero point (displayed as ±0)
 let musicStartOffsetBeats=BASE_MUSIC_OFFSET;
 let musicPhaseOffset=0; // phase offset 0.0–1.0 (fraction of one beat)
-let ptimer=null, playing=false;
+let ptimer=null, playing=false, musicStartAt=0;
 let detectedBPM=0, loopStart=0, loopDur=0;
 const CROSSFADE_MS=80;
 const INTRO_BARS=4;  // bars of heart-only intro (1 bar = 4 beats)
@@ -397,6 +397,7 @@ document.getElementById('fi').addEventListener('change',function(){
   const reader=new FileReader();
   reader.onload=function(e){
     AC.decodeAudioData(e.target.result,function(buf){
+      normalizeBuffer(buf, 0.10); // normalize heart sound
       rawBuffer=buf; cs='uploaded';
       document.querySelectorAll('.sbtn').forEach(b=>b.classList.remove('active'));
       document.getElementById('upinfo').style.display='flex';
@@ -414,6 +415,26 @@ document.getElementById('fi').addEventListener('change',function(){
 
 // ── Music file upload ────────────────────────────────────────────────────
 let musicFileBPM = 0;
+
+// ── Audio normalization ───────────────────────────────────────────────────
+// RMS normalize: adjust gain so the RMS level matches targetRMS.
+// Peak limiting ensures no sample exceeds ±0.99.
+function normalizeBuffer(buffer, targetRMS){
+  targetRMS = targetRMS || 0.12;
+  let sumSq=0, count=0;
+  for(let ch=0;ch<buffer.numberOfChannels;ch++){
+    const d=buffer.getChannelData(ch);
+    for(let i=0;i<d.length;i++){ sumSq+=d[i]*d[i]; count++; }
+  }
+  const rms=Math.sqrt(sumSq/Math.max(1,count));
+  if(rms<0.0001) return buffer; // silent, skip
+  const gain=Math.min(targetRMS/rms, 20); // cap at 20× to avoid wild amplification
+  for(let ch=0;ch<buffer.numberOfChannels;ch++){
+    const d=buffer.getChannelData(ch);
+    for(let i=0;i<d.length;i++) d[i]=Math.max(-0.99,Math.min(0.99,d[i]*gain));
+  }
+  return buffer;
+}
 
 // ── Music Library ─────────────────────────────────────────────────────────
 // Fill in your actual track titles, filenames, and BPMs here.
@@ -460,6 +481,7 @@ async function loadMusicTrack(track){
   const arrayBuf = await res.arrayBuffer();
   if(!AC) AC=new(window.AudioContext||window.webkitAudioContext)();
   const decoded = await AC.decodeAudioData(arrayBuf);
+  normalizeBuffer(decoded, 0.12); // normalize music to consistent loudness
   musicBufferCache[track.id] = decoded;
   return decoded;
 }
@@ -1476,7 +1498,7 @@ function startAll(){
 
   if(cm!=='none'){
     // Music starts exactly at bar 9 — always on a beat boundary → perfect sync
-    const musicStartAt=ctx.currentTime+introSec;
+    musicStartAt=ctx.currentTime+introSec;
     mGain=ctx.createGain(); mGain.gain.value=parseInt(document.getElementById('vM').value)/100;
     mSrc=buildMusicSrc(ctx,musicStartAt);
     if(mSrc){mSrc.connect(mGain); mGain.connect(ctx.destination);}
@@ -1518,10 +1540,18 @@ function togglePlay(){
   if(playing){stopAll();playing=false;}else{startAll();playing=true;}
 }
 
-let pg=0;
 function startProg(){
-  pg=0; clearInterval(ptimer);
-  ptimer=setInterval(()=>{pg=(pg+0.5)%100;document.getElementById('pfill').style.width=pg+'%';},150);
+  clearInterval(ptimer);
+  ptimer=setInterval(()=>{
+    if(!playing||!AC) return;
+    const now=AC.currentTime;
+    let pct=0;
+    if(musicFileBuffer && now>=musicStartAt){
+      const realDur=musicFileBuffer.duration/Math.max(0.1,calcPlaybackRate());
+      pct=((now-musicStartAt)%realDur)/realDur*100;
+    }
+    document.getElementById('pfill').style.width=pct+'%';
+  },80);
 }
 
 // ── Download audio ────────────────────────────────────────────────────────
