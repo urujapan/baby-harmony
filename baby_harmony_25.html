@@ -1,0 +1,1583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Baby Harmony</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,300&family=DM+Sans:wght@300;400&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:#fff5f8;min-height:100vh;padding:2rem 1rem;}
+.app{max-width:560px;margin:0 auto;}
+.lang-bar{display:flex;gap:6px;justify-content:flex-end;margin-bottom:1.5rem;flex-wrap:wrap;}
+.lang-btn{padding:4px 10px;border-radius:20px;border:.5px solid #ddd;background:#f5f5f5;font-size:11px;color:#888;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.lang-btn.active{background:#FBEAF0;border-color:#D4537E;color:#D4537E;}
+.header{text-align:center;margin-bottom:2rem;}
+.title{font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:300;color:#333;line-height:1.3;}
+.title em{font-style:italic;color:#D4537E;}
+.subtitle{font-size:13px;color:#888;margin-top:.4rem;}
+.sec{margin-bottom:1.5rem;}
+.sec-lbl{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#aaa;margin-bottom:.6rem;}
+.card{background:white;border:1px solid #eee;border-radius:12px;padding:1.25rem;}
+.tabs{display:flex;gap:8px;margin-bottom:1rem;}
+.tab{flex:1;padding:8px;border-radius:8px;border:1px solid #eee;background:#f9f9f9;font-size:12px;color:#888;cursor:pointer;text-align:center;font-family:'DM Sans',sans-serif;}
+.tab.active{background:#FBEAF0;border-color:#D4537E;color:#D4537E;}
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.sbtn{padding:10px 12px;border-radius:8px;border:1px solid #eee;background:#f9f9f9;font-size:13px;color:#333;cursor:pointer;text-align:left;font-family:'DM Sans',sans-serif;line-height:1.4;}
+.sbtn.active{background:#E1F5EE;border-color:#5DCAA5;color:#0F6E56;}
+.ssub{font-size:11px;color:#aaa;margin-top:2px;}
+.upzone{border:1px dashed #F4C0D1;border-radius:8px;padding:1.25rem;text-align:center;cursor:pointer;margin-top:.5rem;}
+.upzone:hover{background:#FBEAF0;}
+.upzone p{font-size:13px;color:#888;}
+.upzone strong{color:#D4537E;font-weight:400;}
+input[type=file]{display:none;}
+.upinfo{background:#E1F5EE;border-radius:8px;padding:10px 14px;font-size:13px;color:#0F6E56;margin-top:.75rem;display:none;align-items:center;gap:8px;}
+.divider{height:1px;background:#f0f0f0;margin:.75rem 0;}
+
+/* waveform editor */
+.waveform-wrap{margin-top:1rem;display:none;}
+.waveform-wrap.show{display:block;}
+.waveform-canvas-wrap{position:relative;width:100%;height:80px;border-radius:8px;overflow:hidden;background:#FBEAF0;cursor:crosshair;}
+.waveform-canvas-wrap canvas{display:block;width:100%;height:100%;}
+.loop-region{position:absolute;top:0;height:100%;background:rgba(212,83,126,0.15);border-left:2px solid #D4537E;border-right:2px solid #D4537E;pointer-events:auto;cursor:grab;}
+.loop-region:active{cursor:grabbing;}
+.music-grid{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;}
+.phase-drag-hint{font-size:11px;color:#5DCAA5;margin-top:5px;display:none;}
+.phase-drag-hint.show{display:block;}
+.detect-info{font-size:12px;color:#0F6E56;background:#E1F5EE;border-radius:6px;padding:8px 12px;margin-top:.75rem;}
+.detect-info.warn{color:#854F0B;background:#FAEEDA;}
+.offset-row{display:flex;align-items:center;gap:10px;margin-top:.75rem;}
+.offset-lbl{font-size:12px;color:#888;flex-shrink:0;}
+.offset-btns{display:flex;gap:6px;}
+.obtn{padding:6px 12px;border-radius:6px;border:1px solid #eee;background:#f9f9f9;font-size:12px;color:#333;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.obtn:hover{background:#f0f0f0;}
+.obtn.active-o{background:#FBEAF0;border-color:#D4537E;color:#D4537E;}
+.re-detect-btn{padding:7px 14px;border-radius:6px;border:1px solid #5DCAA5;background:#E1F5EE;font-size:12px;color:#0F6E56;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:.75rem;display:flex;align-items:center;gap:6px;}
+
+/* viz */
+.viz{width:100%;height:72px;border-radius:8px;background:#FBEAF0;position:relative;overflow:hidden;margin-bottom:1rem;display:flex;align-items:center;justify-content:center;gap:3px;}
+.viz-bar{width:3px;border-radius:2px;background:#F4C0D1;height:8px;}
+.viz-hint{font-size:13px;color:#D4537E;opacity:.7;position:absolute;}
+@keyframes barPulse{0%,100%{height:8px}50%{height:44px}}
+.viz.playing .viz-bar{animation:barPulse 0.6s ease-in-out infinite;background:#D4537E;}
+.viz.playing .viz-bar:nth-child(2){animation-delay:.07s;}
+.viz.playing .viz-bar:nth-child(3){animation-delay:.14s;}
+.viz.playing .viz-bar:nth-child(4){animation-delay:.21s;}
+.viz.playing .viz-bar:nth-child(5){animation-delay:.28s;}
+.viz.playing .viz-bar:nth-child(6){animation-delay:.35s;}
+.viz.playing .viz-bar:nth-child(7){animation-delay:.28s;}
+.viz.playing .viz-bar:nth-child(8){animation-delay:.21s;}
+.viz.playing .viz-bar:nth-child(9){animation-delay:.14s;}
+.viz.playing .viz-bar:nth-child(10){animation-delay:.07s;}
+.viz.playing .viz-hint{opacity:0;}
+
+.mgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1rem;}
+.mbtn{padding:10px 6px;border-radius:8px;border:1px solid #eee;background:#f9f9f9;font-size:12px;color:#333;cursor:pointer;text-align:center;font-family:'DM Sans',sans-serif;line-height:1.4;}
+.mbtn.active{background:#E1F5EE;border-color:#5DCAA5;color:#0F6E56;}
+.micon{font-size:18px;display:block;margin-bottom:3px;}
+.srow{display:flex;align-items:center;gap:12px;margin-bottom:1rem;}
+.slbl{font-size:12px;color:#888;width:80px;flex-shrink:0;}
+input[type=range]{flex:1;accent-color:#D4537E;}
+.sval{font-size:12px;color:#333;min-width:40px;text-align:right;}
+.player{background:white;border:1px solid #eee;border-radius:12px;padding:1.5rem;text-align:center;}
+.pbtn{width:64px;height:64px;border-radius:50%;border:none;background:#D4537E;color:white;font-size:24px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;margin-bottom:1rem;transition:transform .15s;}
+.pbtn:hover{background:#993556;transform:scale(1.05);}
+.np{font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:#333;margin-bottom:.2rem;}
+.npsub{font-size:12px;color:#888;}
+.pbar{width:100%;height:3px;background:#eee;border-radius:2px;margin:1rem 0 .5rem;overflow:hidden;}
+.pfill{height:100%;width:0%;background:#D4537E;border-radius:2px;transition:width .1s;}
+.ginput{width:100%;padding:12px 16px;border:1px solid #eee;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:14px;color:#333;background:white;margin-bottom:.75rem;outline:none;}
+.ginput:focus{border-color:#D4537E;}
+.arow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:.75rem;}
+.abtn{padding:12px 8px;border-radius:8px;border:1px solid #eee;background:#f9f9f9;font-size:13px;color:#333;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px;}
+.abtn:hover{background:#f0f0f0;}
+.abtn.primary{background:#D4537E;border-color:#D4537E;color:white;grid-column:1/-1;}
+.abtn.primary:hover{background:#993556;}
+.spanel{background:#f9f9f9;border-radius:8px;padding:1rem;margin-top:.75rem;}
+.stitle{font-size:12px;color:#aaa;margin-bottom:.75rem;letter-spacing:.08em;text-transform:uppercase;}
+.sgridbtn{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.shbtn{padding:10px 4px;border-radius:8px;border:1px solid #eee;background:white;font-size:11px;color:#333;cursor:pointer;font-family:'DM Sans',sans-serif;text-align:center;line-height:1.3;}
+.lrow{display:flex;gap:8px;margin-top:.75rem;}
+.lbox{flex:1;padding:10px 12px;border:1px solid #eee;border-radius:8px;font-size:12px;color:#888;background:white;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cpbtn{padding:10px 14px;border-radius:8px;border:1px solid #eee;background:#f9f9f9;font-size:12px;color:#333;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:4px;}
+.gpreview{border:1px solid #F4C0D1;border-radius:8px;padding:1.25rem;text-align:center;margin-top:.75rem;}
+.ghost{font-size:28px;color:#D4537E;margin-bottom:.5rem;}
+.gmsg{font-family:'Cormorant Garamond',serif;font-size:1.15rem;font-weight:300;color:#333;font-style:italic;margin-bottom:.4rem;}
+.gdet{font-size:12px;color:#aaa;}
+.womb-prev-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:6px;border:1px solid #F4C0D1;background:#FBEAF0;font-size:12px;color:#D4537E;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:.75rem;}
+.womb-prev-btn.playing{background:#D4537E;color:white;border-color:#D4537E;}
+.track-panel{margin-top:8px;display:none;}
+.track-panel.show{display:block;}
+.track-item{display:flex;align-items:center;gap:8px;width:100%;padding:9px 12px;border-radius:8px;border:1px solid #eee;background:#f9f9f9;font-size:13px;color:#333;cursor:pointer;margin-bottom:6px;font-family:'DM Sans',sans-serif;text-align:left;}
+.track-item:hover{background:#f0f0f0;}
+.track-item.active{background:#E1F5EE;border-color:#5DCAA5;color:#0F6E56;}
+.track-item.loading{opacity:.6;pointer-events:none;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.spin{display:inline-block;animation:spin .8s linear infinite;}
+.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(20px);background:white;border:1px solid #eee;border-radius:12px;padding:12px 24px;font-size:14px;color:#333;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,0.08);}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="lang-bar">
+  <button class="lang-btn" onclick="L('ja')">日本語</button>
+  <button class="lang-btn active" onclick="L('en')">English</button>
+  <button class="lang-btn" onclick="L('zh')">中文</button>
+  <button class="lang-btn" onclick="L('ko')">한국어</button>
+  <button class="lang-btn" onclick="L('es')">Español</button>
+  <button class="lang-btn" onclick="L('fr')">Français</button>
+</div>
+<div class="header">
+  <div class="title" id="T0"><em>A Harmony Only for Baby &amp; Mama</em></div>
+  <p class="subtitle" id="T1">Blend womb sounds with music — a one-of-a-kind gift</p>
+</div>
+
+<div class="sec">
+  <p class="sec-lbl" id="T2">Womb Sound</p>
+  <div class="card">
+    <div class="tabs">
+      <button class="tab active" id="T3" onclick="setTab('s',this)">Sample Sounds</button>
+      <button class="tab" id="T4" onclick="setTab('u',this)">Upload Recording</button>
+    </div>
+    <div id="sampleGrid" class="sgrid">
+      <button class="sbtn active" onclick="pickSample(this,'beat')"><i class="ti ti-heart"></i> <span id="T5">Heartbeat</span><div class="ssub" id="T6">Synth · 80 bpm</div></button>
+      <button class="sbtn" onclick="pickSample(this,'flow')"><i class="ti ti-wave-sine"></i> <span id="T7">Blood Flow</span><div class="ssub" id="T8">Soft waves</div></button>
+      <button class="sbtn" onclick="pickSample(this,'breath')"><i class="ti ti-wind"></i> <span id="T9">Breathing</span><div class="ssub" id="T10">Gentle rhythm</div></button>
+    </div>
+    <div id="uploadZone" class="upzone" style="display:none" onclick="document.getElementById('fi').click()">
+      <p><i class="ti ti-upload" style="font-size:22px;display:block;margin-bottom:6px;color:#D4537E;"></i>
+      <strong id="T11">Tap to select your recording</strong><br><span id="T12">MP3, WAV, M4A supported</span></p>
+      <input type="file" id="fi" accept="audio/*">
+    </div>
+    <div class="upinfo" id="upinfo"><i class="ti ti-check"></i><span id="upname">—</span></div>
+
+    <!-- Waveform editor (shown after upload) -->
+    <div class="waveform-wrap" id="waveformWrap">
+      <div class="waveform-canvas-wrap" id="waveformCanvasWrap">
+        <canvas id="waveformCanvas"></canvas>
+        <div class="loop-region" id="loopRegion"></div>
+        <canvas id="gridCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;"></canvas>
+        <div id="wombPlayhead" style="position:absolute;top:0;width:2px;height:100%;background:#D4537E;opacity:0.85;display:none;pointer-events:none;border-radius:1px;"></div>
+      </div>
+      <p class="phase-drag-hint" id="phaseHint">← → 音楽グリッドをドラッグして心音の拍に合わせる（再生中も調整可）</p>
+      <div class="detect-info" id="detectInfo">Analyzing...</div>
+      <button class="womb-prev-btn" id="wombPrevBtn" onclick="toggleWombPreview()">
+        <i class="ti ti-player-play" id="wombPrevIco"></i><span id="wombPrevLbl">心音を確認</span>
+      </button>
+      <details style="margin-top:6px;">
+        <summary style="font-size:11px;color:#bbb;cursor:pointer;user-select:none;">Debug info</summary>
+        <div style="font-size:11px;font-family:monospace;color:#888;margin-top:4px;padding:6px 10px;background:#f5f5f5;border-radius:6px;" id="debugInfo">—</div>
+      </details>
+      <div class="offset-row" style="margin-top:.75rem;flex-wrap:wrap;gap:6px;">
+        <span class="offset-lbl">Heart BPM:</span>
+        <span style="font-size:13px;color:#D4537E;font-weight:500;" id="bpmAdjDisplay">—</span>
+        <div class="offset-btns" style="margin-left:auto;">
+          <button class="obtn" onclick="adjustDetectedBPM(-5)" title="−5 bpm">−5</button>
+          <button class="obtn" onclick="adjustDetectedBPM(-1)" title="−1 bpm">−1</button>
+          <button class="obtn" onclick="adjustDetectedBPM(1)" title="+1 bpm">+1</button>
+          <button class="obtn" onclick="adjustDetectedBPM(5)" title="+5 bpm">+5</button>
+          <button class="obtn" onclick="adjustDetectedBPM(0)" title="ダブルカウント補正（÷2）" style="font-size:11px;color:#854F0B;border-color:#F4C0D1;">÷2</button>
+        </div>
+      </div>
+      <div class="offset-row">
+        <span class="offset-lbl" id="T_offsetLbl">Adjust start:</span>
+        <div class="offset-btns">
+          <button class="obtn" onclick="shiftLoop(-4)" title="−4 beats">⟨⟨</button>
+          <button class="obtn" onclick="shiftLoop(-1)" title="−1 beat">⟨</button>
+          <button class="obtn" onclick="shiftLoop(1)" title="+1 beat">⟩</button>
+          <button class="obtn" onclick="shiftLoop(4)" title="+4 beats">⟩⟩</button>
+        </div>
+        <button class="re-detect-btn" onclick="runDetect()"><i class="ti ti-refresh" style="font-size:14px;"></i> <span id="T_redetect">Re-detect</span></button>
+      </div>
+    </div>
+
+    <div class="divider" style="margin-top:1rem;"></div>
+    <div class="viz" id="vizBox">
+      <div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div>
+      <div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div>
+      <div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div>
+      <div class="viz-bar"></div>
+      <span class="viz-hint" id="T13">▶ Play to see visualizer</span>
+    </div>
+  </div>
+</div>
+
+<div class="sec">
+  <p class="sec-lbl" id="T14">Background Music</p>
+  <div class="card">
+    <div class="mgrid">
+      <button class="mbtn active" onclick="pickMusic(this,'lullaby')"><span class="micon"><i class="ti ti-moon"></i></span><span class="mn" data-k="lullaby">子守唄</span></button>
+      <button class="mbtn" onclick="pickMusic(this,'ambient')"><span class="micon"><i class="ti ti-sparkles"></i></span><span class="mn" data-k="ambient">アンビエント</span></button>
+      <button class="mbtn" onclick="pickMusic(this,'classical')"><span class="micon"><i class="ti ti-violin"></i></span><span class="mn" data-k="classical">クラシック</span></button>
+      <button class="mbtn" onclick="pickMusic(this,'world')"><span class="micon"><i class="ti ti-world"></i></span><span class="mn" data-k="world">ワールド</span></button>
+      <button class="mbtn" onclick="pickMusic(this,'electro')"><span class="micon"><i class="ti ti-bolt"></i></span><span class="mn" data-k="electro">エレクトロ</span></button>
+      <button class="mbtn" onclick="pickMusic(this,'other')"><span class="micon"><i class="ti ti-dots"></i></span><span class="mn" data-k="none">その他</span></button>
+    </div>
+    <div class="track-panel" id="trackPanel"></div>
+    <div class="upzone" id="musicUpZone" onclick="document.getElementById('mfi').click()" style="margin:.75rem 0;">
+      <p><i class="ti ti-upload" style="font-size:20px;display:block;margin-bottom:4px;color:#5DCAA5;"></i>
+      <strong id="T_mupload">Upload your music file</strong><br>
+      <span id="T_mformats">WAV, MP3, M4A supported</span></p>
+      <input type="file" id="mfi" accept="audio/*">
+    </div>
+    <div class="upinfo" id="musicUpInfo" style="margin-bottom:.75rem;">
+      <i class="ti ti-music" style="color:#0F6E56;"></i><span id="musicUpName">—</span>
+    </div>
+    <div class="divider"></div>
+    <div class="srow"><span class="slbl" id="T15">Womb sound</span><input type="range" id="vW" min="0" max="100" value="60" step="1" oninput="onSlider('vW','vWv','%')"><span class="sval" id="vWv">60%</span></div>
+    <div class="srow"><span class="slbl" id="T16">Music</span><input type="range" id="vM" min="0" max="100" value="40" step="1" oninput="onSlider('vM','vMv','%')"><span class="sval" id="vMv">40%</span></div>
+    <div class="srow" id="tempoRow" style="display:none"><span class="slbl" id="T17">Tempo</span><input type="range" id="vT" min="60" max="140" value="80" step="1" oninput="onSlider('vT','vTv',' bpm')"><span class="sval" id="vTv">80 bpm</span></div>
+    <div class="srow" id="musicBpmRow">
+      <span class="slbl" id="T17b">Music BPM</span>
+      <span style="flex:1;font-size:13px;color:#0F6E56;" id="musicBpmLabel">Auto — synced to womb sound</span>
+    </div>
+    <div class="srow" id="musicFineRow" style="display:none;">
+      <span class="slbl">Fine-tune</span>
+      <input type="range" id="musicFine" min="-20" max="20" value="0" step="1" oninput="onMusicFine(this.value)">
+      <span class="sval" id="musicFineVal">±0 bpm</span>
+    </div>
+    <div class="srow">
+      <span class="slbl">Music offset</span>
+      <div class="offset-btns">
+        <button class="obtn" onclick="adjustMusicOffset(-0.5)">−½</button>
+        <button class="obtn" onclick="adjustMusicOffset(-0.25)">−¼</button>
+        <span id="musicOffsetVal" style="font-size:12px;color:#D4537E;min-width:48px;text-align:center;">0</span>
+        <button class="obtn" onclick="adjustMusicOffset(0.25)">+¼</button>
+        <button class="obtn" onclick="adjustMusicOffset(0.5)">+½</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="sec">
+  <p class="sec-lbl" id="T18">Preview</p>
+  <div class="player">
+    <button class="pbtn" onclick="togglePlay()"><i class="ti ti-player-play" id="pico"></i></button>
+    <div class="np" id="npTitle">Ready to play</div>
+    <div class="npsub" id="npSub">Heartbeat × Lullaby</div>
+    <div class="pbar"><div class="pfill" id="pfill"></div></div>
+  </div>
+</div>
+
+<div class="sec">
+  <p class="sec-lbl" id="T19">Create a Gift</p>
+  <div class="card">
+    <input class="ginput" type="text" id="gMsg" placeholder="e.g. To our little one, we love you ♡" oninput="refreshPreview()">
+    <input class="ginput" type="text" id="gFrom" placeholder="From (e.g. Mom &amp; Dad)" oninput="refreshPreview()">
+    <div class="gpreview">
+      <div class="ghost"><i class="ti ti-heart"></i></div>
+      <div class="gmsg" id="pMsg">Enter your message above</div>
+      <div class="gdet" id="pFrom">From</div>
+      <div class="divider"></div>
+      <div class="gdet" id="pSound">Heartbeat × Lullaby</div>
+      <div class="gdet" style="color:#D4537E;font-size:11px;margin-top:4px;">Womb sound × Music blend</div>
+    </div>
+    <div class="divider"></div>
+    <div class="arow">
+      <button class="abtn" onclick="dlAudio()"><i class="ti ti-download"></i> <span id="T20">Download Audio</span></button>
+      <button class="abtn" onclick="dlCard()"><i class="ti ti-file"></i> <span id="T21">Download Card</span></button>
+      <button class="abtn primary" onclick="doGift()"><i class="ti ti-gift"></i> <span id="T22">Complete Gift</span></button>
+    </div>
+    <div class="spanel">
+      <div class="stitle" id="T23">Share</div>
+      <div class="sgridbtn">
+        <button class="shbtn" onclick="share('line')"><span class="micon"><i class="ti ti-message-circle"></i></span>LINE</button>
+        <button class="shbtn" onclick="share('x')"><span class="micon"><i class="ti ti-brand-x"></i></span>X</button>
+        <button class="shbtn" onclick="share('ig')"><span class="micon"><i class="ti ti-brand-instagram"></i></span>Instagram</button>
+        <button class="shbtn" onclick="copyLink()"><span class="micon"><i class="ti ti-link"></i></span><span id="T24">Copy Link</span></button>
+      </div>
+      <div class="lrow">
+        <div class="lbox" id="slink">https://babyharmony.app/s/abc123</div>
+        <button class="cpbtn" onclick="copyLink()"><i class="ti ti-copy"></i> <span id="T25">Copy</span></button>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ── i18n ──────────────────────────────────────────────────────────────────
+const TX={en:['<em>A Harmony Only for Baby & Mama</em>','Blend womb sounds with music — a one-of-a-kind gift','Womb Sound','Sample Sounds','Upload Recording','Heartbeat','Synth · 80 bpm','Blood Flow','Soft waves','Breathing','Gentle rhythm','Tap to select your recording','MP3, WAV, M4A supported','▶ Play to see visualizer','Background Music','Womb sound','Music','Tempo','Preview','Create a Gift','Download Audio','Download Card','Complete Gift','Share','Copy Link','Copy'],ja:['<em>赤ちゃんとママの<br>世界に一つだけのハーモニー</em>','胎内音 × 音楽 — あなただけのサウンドを','胎内音','サンプル音源','録音をアップロード','心音','シンセ · 80bpm','血流音','波のよう','呼吸音','穏やかなリズム','タップして録音ファイルを選択','MP3・WAV・M4A 対応','▶ 再生でビジュアライザーが動きます','BGM を選ぶ','胎内音','BGM','テンポ','プレビュー','贈り物を作る','音声をDL','カードをDL','贈り物を完成させる','SNSでシェア','リンク','コピー'],zh:['<em>宝宝与妈妈专属的和谐乐章</em>','融合胎音与音乐 — 独一无二的礼物','胎音','示例音源','上传录音','心跳声','合成 · 80bpm','血流声','如波浪般','呼吸声','平静的节奏','点击选择录音文件','支持 MP3、WAV、M4A','▶ 播放以显示可视化','选择背景音乐','胎音','音乐','节奏','预览','创建礼物','下载音频','下载贺卡','完成礼物','分享','复制链接','复制'],ko:['<em>아기와 엄마만의 세상에 하나뿐인 하모니</em>','태내음과 음악의 조화 — 특별한 선물','태내음','샘플 음원','녹음 업로드','심장 소리','신스 · 80bpm','혈류음','파도처럼','호흡음','부드러운 리듬','녹음 파일을 선택하세요','MP3, WAV, M4A 지원','▶ 재생하면 비주얼라이저가 표시됩니다','배경 음악 선택','태내음','음악','템포','미리 듣기','선물 만들기','오디오 다운','카드 다운','선물 완성하기','공유하기','링크 복사','복사'],es:['<em>La armonía única de bebé y mamá</em>','Mezcla sonidos del vientre con música — un regalo único','Sonido del vientre','Sonidos de muestra','Subir grabación','Latido','Synth · 80 bpm','Flujo sanguíneo','Como olas','Respiración','Ritmo suave','Toca para seleccionar tu grabación','Se admite MP3, WAV, M4A','▶ Reproduce para ver el visualizador','Música de fondo','Vientre','Música','Tempo','Vista previa','Crear un regalo','Descargar audio','Descargar tarjeta','Completar regalo','Compartir','Copiar enlace','Copiar'],fr:['<em>L\'harmonie unique de bébé et maman</em>','Mélangez sons utérins et musique — un cadeau unique','Son utérin','Sons exemples','Téléverser un enregistrement','Battement','Synth · 80 bpm','Flux sanguin','Comme des vagues','Respiration','Rythme doux','Appuyez pour sélectionner','MP3, WAV, M4A acceptés','▶ Lisez pour voir le visualiseur','Musique de fond','Son utérin','Musique','Tempo','Aperçu','Créer un cadeau','Télécharger audio','Télécharger carte','Finaliser le cadeau','Partager','Copier le lien','Copier']};
+const MN={en:{lullaby:'Lullaby',ambient:'Ambient',classical:'Classical',world:'World',electro:'Electro',none:'Other',file:'Uploaded Music'},ja:{lullaby:'子守唄',ambient:'アンビエント',classical:'クラシック',world:'ワールド',electro:'エレクトロ',none:'その他',file:'アップロード曲'},zh:{lullaby:'摇篮曲',ambient:'氛围音乐',classical:'古典乐',world:'世界音乐',electro:'电子乐',none:'其他',file:'上传音乐'},ko:{lullaby:'자장가',ambient:'앰비언트',classical:'클래식',world:'월드',electro:'일렉트로',none:'기타',file:'업로드 음악'},es:{lullaby:'Nana',ambient:'Ambiente',classical:'Clásica',world:'Mundial',electro:'Electro',none:'Otro',file:'Música subida'},fr:{lullaby:'Berceuse',ambient:'Ambiant',classical:'Classique',world:'Mondial',electro:'Électro',none:'Autre',file:'Musique importée'}};
+const TOAST={en:{loaded:'Analyzed! Adjust loop region if needed.',gen:'Generating...',dlA:'Audio downloaded!',dlC:'Card downloaded!',gift:'Gift ready!',msg:'Please enter a message.',copied:'Link copied!',fail:'Copy failed.',noBeats:'Could not detect rhythm. Try re-detect or adjust manually.'},ja:{loaded:'解析完了！ループ区間を確認してください。',gen:'生成中...',dlA:'音声をダウンロードしました',dlC:'カードをダウンロードしました',gift:'贈り物が完成しました！',msg:'メッセージを入力してください',copied:'リンクをコピーしました！',fail:'コピーできませんでした',noBeats:'リズムを検出できませんでした。再検出してみてください。'},zh:{loaded:'分析完成！请确认循环区间。',gen:'生成中...',dlA:'音频已下载',dlC:'贺卡已下载',gift:'礼物已完成！',msg:'请先输入留言',copied:'链接已复制！',fail:'复制失败',noBeats:'未能检测到节奏，请尝试重新检测。'},ko:{loaded:'분석 완료! 루프 구간을 확인하세요.',gen:'생성 중...',dlA:'오디오 다운로드됨',dlC:'카드 다운로드됨',gift:'선물 완성!',msg:'메시지를 입력해주세요',copied:'링크 복사됨!',fail:'복사 실패',noBeats:'리듬을 감지하지 못했습니다. 다시 시도해보세요.'},es:{loaded:'¡Analizado! Ajusta la región si necesitas.',gen:'Generando...',dlA:'¡Descargado!',dlC:'¡Tarjeta descargada!',gift:'¡Regalo listo!',msg:'Escribe un mensaje.',copied:'¡Copiado!',fail:'Error.',noBeats:'No se detectó ritmo. Intenta de nuevo.'},fr:{loaded:'Analysé ! Ajustez la région si nécessaire.',gen:'Génération...',dlA:'Téléchargé !',dlC:'Carte téléchargée !',gift:'Cadeau prêt !',msg:'Entrez un message.',copied:'Lien copié !',fail:'Échec.',noBeats:'Rythme non détecté. Réessayez.'}};
+const LL={en:'English',ja:'日本語',zh:'中文',ko:'한국어',es:'Español',fr:'Français'};
+const READY={en:'Ready to play',ja:'再生する準備ができています',zh:'准备好播放',ko:'재생 준비 완료',es:'Listo para reproducir',fr:'Prêt à jouer'};
+const NOW={en:'Now playing...',ja:'再生中...',zh:'播放中...',ko:'재생 중...',es:'Reproduciendo...',fr:'Lecture en cours...'};
+
+let cl='en',cs='beat',cm='lullaby';
+let rawBuffer=null, loopBuffer=null;
+let AC=null, wSrc=null, mSrc=null, wGain=null, mGain=null;
+let musicFileBuffer=null;
+let musicFineBPM=0; // user fine-tune offset in BPM
+const BASE_MUSIC_OFFSET=0.25;   // calibrated zero point (displayed as ±0)
+let musicStartOffsetBeats=BASE_MUSIC_OFFSET;
+let musicPhaseOffset=0; // phase offset 0.0–1.0 (fraction of one beat)
+let ptimer=null, playing=false;
+let detectedBPM=0, loopStart=0, loopDur=0;
+const CROSSFADE_MS=80;
+const INTRO_BARS=4;  // bars of heart-only intro (1 bar = 4 beats)
+const FADEIN_BARS=2; // first 2 bars = womb-sound fade-in
+let mIntroGain=null;
+let musicIntroTimer=null;
+
+function getEffectiveBPM(){
+  if(cs==='uploaded'&&detectedBPM>0) return detectedBPM;
+  return parseInt(document.getElementById('vT').value)||80;
+}
+
+function t(i){return TX[cl][i]||TX.en[i]||'';}
+function ts(k){return TOAST[cl][k]||TOAST.en[k]||'';}
+function mn(k){return MN[cl][k]||k;}
+
+function L(l){
+  cl=l;
+  document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.textContent.trim()===LL[l]));
+  for(let i=0;i<=25;i++){const el=document.getElementById('T'+i);if(el){if(i===0)el.innerHTML=t(0);else el.textContent=t(i);}}
+  document.querySelectorAll('.mn').forEach(el=>el.textContent=mn(el.dataset.k));
+  document.getElementById('npTitle').textContent=playing?NOW[l]:READY[l];
+  document.getElementById('gMsg').placeholder=t(11);
+  refreshPreview(); updateNP();
+}
+
+function sName(){return{beat:t(5),flow:t(7),breath:t(9),uploaded:document.getElementById('upname').textContent||'Uploaded'}[cs]||t(5);}
+function updateNP(){document.getElementById('npSub').textContent=sName()+' × '+musicDisplayName();}
+function refreshPreview(){
+  document.getElementById('pMsg').textContent=document.getElementById('gMsg').value.trim()||'Enter your message above';
+  document.getElementById('pFrom').textContent=document.getElementById('gFrom').value.trim()||'From';
+  document.getElementById('pSound').textContent=sName()+' × '+musicDisplayName();
+}
+
+function setTab(tab,btn){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('sampleGrid').style.display=tab==='s'?'grid':'none';
+  document.getElementById('uploadZone').style.display=tab==='u'?'block':'none';
+}
+function pickSample(btn,type){
+  document.querySelectorAll('.sbtn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); cs=type;
+  // Show manual tempo slider only for synth sounds
+  document.getElementById('tempoRow').style.display=(type==='uploaded')?'none':'flex';
+  document.getElementById('musicBpmRow').style.display='flex';
+  updateMusicBpmLabel();
+  updateNP(); refreshPreview();
+  if(playing){stopAll();startAll();}
+}
+function pickMusic(btn,type){
+  document.querySelectorAll('.mbtn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); cm=type;
+
+  const tracks=MUSIC_LIBRARY[type];
+  if(tracks&&tracks.length>0){
+    renderTrackPanel(type);
+    // Auto-load first track if none from this category is selected
+    const hasSelected=selectedTrack&&tracks.find(t=>t.id===selectedTrack.id);
+    if(!hasSelected) selectTrack(tracks[0].id);
+  } else {
+    document.getElementById('trackPanel').style.display='none';
+    if(type!=='file'){ selectedTrack=null; musicFileBuffer=null; }
+    updateNP(); refreshPreview();
+    if(playing){stopAll();startAll();}
+  }
+}
+function onSlider(id,outId,sfx){
+  document.getElementById(outId).textContent=document.getElementById(id).value+sfx;
+  if(id==='vW'&&wGain) wGain.gain.value=parseInt(document.getElementById(id).value)/100;
+  if(id==='vM'&&mGain) mGain.gain.value=parseInt(document.getElementById(id).value)/100;
+}
+
+// ── File upload & analysis ────────────────────────────────────────────────
+document.getElementById('fi').addEventListener('change',function(){
+  const file=this.files[0]; if(!file) return;
+  if(!AC) AC=new(window.AudioContext||window.webkitAudioContext)();
+  const reader=new FileReader();
+  reader.onload=function(e){
+    AC.decodeAudioData(e.target.result,function(buf){
+      rawBuffer=buf; cs='uploaded';
+      document.querySelectorAll('.sbtn').forEach(b=>b.classList.remove('active'));
+      document.getElementById('upinfo').style.display='flex';
+      document.getElementById('upname').textContent=file.name;
+      document.getElementById('waveformWrap').classList.add('show');
+      drawWaveform(buf);
+      initGridDrag();
+      runDetect();
+      updateNP(); refreshPreview();
+      if(playing){stopAll();startAll();}
+    },function(e){toast('Decode error: '+e);});
+  };
+  reader.readAsArrayBuffer(file);
+});
+
+// ── Music file upload ────────────────────────────────────────────────────
+let musicFileBPM = 0;
+
+// ── Music Library ─────────────────────────────────────────────────────────
+// Fill in your actual track titles, filenames, and BPMs here.
+// bpm: 0 = unknown (auto-sync mode)
+const MUSIC_LIBRARY = {
+  lullaby:[
+    {id:'lu1', title:'Fairy',      file:'music/WMSL_Fairy_BPM138.mp3',      bpm:138},
+    {id:'lu2', title:'Twinkle',    file:'music/WMSL_Twinkle_BPM152.mp3',    bpm:152},
+    {id:'lu3', title:'Moms Echo',  file:'music/WMSL_Moms Echo_BPM175.mp3',  bpm:175},
+  ],
+  ambient:[
+    {id:'am1', title:'Ambient Piano',    file:'music/WMSL_Ambient Piano_BPM138.mp3',    bpm:138},
+    {id:'am2', title:'Memory of Birth',  file:'music/WMSL_Memory of Birth_BPM150.mp3',  bpm:150},
+  ],
+  classical:[
+    {id:'cl1', title:'Misty Forest',    file:'music/WMSL_Misty Forest_BPM140.mp3',    bpm:140},
+    {id:'cl2', title:'Elegant Violin',  file:'music/WMSL_Elegant Violin_BPM138.mp3',  bpm:138},
+  ],
+  world:[
+    {id:'wo1', title:'Auspicious Gamelan', file:'music/WMSL_Auspicious Gamelan_BPM150.mp3', bpm:150},
+    {id:'wo2', title:'Morning Glow',       file:'music/WMSL_Morning glow_BPM150.mp3',        bpm:150},
+    {id:'wo3', title:'My Dear Island',     file:'music/WMSL_My Dear Island_BPM140.mp3',      bpm:140},
+  ],
+  electro:[
+    {id:'el1', title:'Hyper Baby!',       file:'music/WMSL_Hyper Baby!_BPM173.mp3',       bpm:173},
+    {id:'el2', title:'Infinite Horizon',  file:'music/WMSL_Infinite Horizon_BPM140.mp3',  bpm:140},
+  ],
+  other:[
+    {id:'ot1', title:'New Voyage',      file:'music/WMSL_New Voyage_BPM149.mp3',      bpm:149},
+    {id:'ot2', title:'Across the Blue', file:'music/WMSL_Across the Blue_BPM148.mp3', bpm:148},
+  ],
+};
+const musicBufferCache = {};
+let selectedTrack = null;
+
+// ── Library track loading ────────────────────────────────────────────────
+async function loadMusicTrack(track){
+  if(musicBufferCache[track.id]) return musicBufferCache[track.id];
+  const res = await fetch(track.file);
+  if(!res.ok) throw new Error('HTTP '+res.status+': '+track.file);
+  const arrayBuf = await res.arrayBuffer();
+  if(!AC) AC=new(window.AudioContext||window.webkitAudioContext)();
+  const decoded = await AC.decodeAudioData(arrayBuf);
+  musicBufferCache[track.id] = decoded;
+  return decoded;
+}
+
+async function selectTrack(trackId){
+  let track=null;
+  for(const cat of Object.values(MUSIC_LIBRARY)){
+    track=cat.find(t=>t.id===trackId); if(track) break;
+  }
+  if(!track) return;
+
+  const btn=document.getElementById('ti_'+trackId);
+  if(btn){ btn.classList.add('loading'); btn.innerHTML='<i class="ti ti-loader spin" style="font-size:14px;"></i> '+track.title; }
+
+  try{
+    musicFileBuffer = await loadMusicTrack(track);
+    selectedTrack = track;
+    musicFileBPM = track.bpm||0;
+    musicFineBPM=0; musicPhaseOffset=0;
+    document.getElementById('musicFine').value=0;
+    document.getElementById('musicFineVal').textContent='±0 bpm';
+    document.getElementById('musicFineRow').style.display='flex';
+    updateNP(); refreshPreview(); updateMusicBpmLabel(); drawMusicGrid();
+    if(cs==='uploaded') document.getElementById('phaseHint').classList.add('show');
+    if(playing){stopAll();startAll();}
+    toast(track.title+' loaded!');
+  }catch(e){
+    toast('Load error: '+e.message);
+    selectedTrack=null; musicFileBuffer=null;
+  }finally{
+    // Rebuild panel to restore button state
+    renderTrackPanel(cm);
+  }
+}
+
+function renderTrackPanel(type){
+  const panel=document.getElementById('trackPanel');
+  const tracks=MUSIC_LIBRARY[type];
+  if(!tracks||tracks.length===0){panel.style.display='none';return;}
+  panel.innerHTML=tracks.map(t=>`<button class="track-item${selectedTrack&&selectedTrack.id===t.id?' active':''}" id="ti_${t.id}" onclick="selectTrack('${t.id}')"><i class="ti ti-music" style="font-size:14px;flex-shrink:0;"></i> ${t.title}</button>`).join('');
+  panel.style.display='block';
+}
+
+function musicDisplayName(){
+  if(selectedTrack) return selectedTrack.title;
+  if(cm==='file') return document.getElementById('musicUpName').textContent||'Uploaded Music';
+  return mn(cm);
+}
+
+function extractBPMFromFilename(name){
+  const m = name.match(/BPM(\d+)/i);
+  return m ? parseInt(m[1]) : 0;
+}
+
+function calcPlaybackRate(){
+  if(!musicFileBPM || musicFileBPM===0) return 1;
+  const heartBPM = (cs==='uploaded'&&detectedBPM>0) ? detectedBPM : 0;
+  if(!heartBPM) return 1;
+
+  // Find the best integer multiplier so the music tempo aligns with
+  // a harmonic multiple of the heart rate.
+  //
+  // Example: heart=75 bpm, music=148 bpm
+  //   mult=1: target=75,  rate=75/148=0.507  diff from 1.0 = 0.493
+  //   mult=2: target=150, rate=150/148=1.014 diff from 1.0 = 0.014 ← best
+  //   mult=3: target=225, rate=225/148=1.520 diff from 1.0 = 0.520
+  //   → use mult=2, rate≈1.014 (music plays at nearly original speed)
+
+  let bestRate = 1, bestDiff = Infinity;
+  for(let mult = 1; mult <= 4; mult++){
+    const targetBPM = heartBPM * mult + musicFineBPM;
+    const rate = targetBPM / musicFileBPM;
+    if(rate < 0.4 || rate > 2.5) continue;
+    const diff = Math.abs(rate - 1.0);
+    if(diff < bestDiff){ bestDiff = diff; bestRate = rate; }
+  }
+
+  return Math.round(bestRate * 1000) / 1000;
+}
+
+document.getElementById('mfi').addEventListener('change',function(){
+  const file=this.files[0]; if(!file) return;
+  musicFileBPM = 0; // reset before reading new file
+  musicFileBPM = extractBPMFromFilename(file.name);
+  if(!AC) AC=new(window.AudioContext||window.webkitAudioContext)();
+  const reader=new FileReader();
+  reader.onload=function(e){
+    AC.decodeAudioData(e.target.result,function(buf){
+      musicFileBuffer=buf;
+      document.getElementById('musicUpInfo').style.display='flex';
+      const rate = calcPlaybackRate();
+      const mult = getBestMult();
+      const multLabel = mult>1 ? ` (heart ×${mult})` : '';
+      const bpmInfo = musicFileBPM ? ` · BPM ${musicFileBPM} → ×${rate}${multLabel}` : '';
+      document.getElementById('musicUpName').textContent=file.name.replace(/\.[^.]+$/,'')+bpmInfo;
+      document.querySelectorAll('.mbtn').forEach(b=>b.classList.remove('active'));
+      document.getElementById('trackPanel').style.display='none';
+      selectedTrack=null;
+      cm='file';
+      musicFineBPM=0; musicPhaseOffset=0;
+      document.getElementById('musicFine').value=0;
+      document.getElementById('musicFineVal').textContent='±0 bpm';
+
+      document.getElementById('musicFineRow').style.display='flex';
+
+      document.getElementById('debugInfo').textContent = 'Music loaded. musicFileBPM='+musicFileBPM+' | detectedBPM='+detectedBPM+' | rate='+calcPlaybackRate();
+      updateNP(); refreshPreview(); updateMusicBpmLabel();
+      drawMusicGrid();
+      // show phase hint if womb sound uploaded
+      if(cs==='uploaded') document.getElementById('phaseHint').classList.add('show');
+      if(playing){stopAll();startAll();}
+      const msg = musicFileBPM
+        ? 'Music loaded! Rate: ×'+rate+' ('+Math.round(musicFileBPM*rate)+' bpm)'
+        : 'Music loaded!';
+      toast(msg);
+    },function(e){toast('Music decode error: '+e);});
+  };
+  reader.readAsArrayBuffer(file);
+});
+
+// ── Beat detection (autocorrelation method) ───────────────────────────────
+//
+//  Pipeline:
+//  1. Downsample to ~1kHz for speed
+//  2. Compute short-time RMS energy envelope (10ms frames)
+//  3. Normalize + apply autocorrelation over a heart-rate lag range
+//     (胎児: 110–180 bpm → lag 333–545ms / 成人: 50–120 bpm → lag 500–1200ms)
+//  4. Find the lag with highest correlation = true beat period
+//  5. Walk peaks at that period to find the best 4-beat window
+//
+//  This is immune to lub-dub double-counting because autocorrelation
+//  measures the period of the whole heartbeat waveform, not individual spikes.
+
+function runDetect(){
+  if(!rawBuffer) return;
+  document.getElementById('detectInfo').textContent='Analyzing...';
+  document.getElementById('detectInfo').className='detect-info';
+
+  const sr = rawBuffer.sampleRate;
+  const rawData = rawBuffer.getChannelData(0);
+
+  // ── Step 0: silence trim ──────────────────────────────────────────────
+  // Find the first frame where RMS exceeds 1% of the file's peak RMS.
+  // This skips leading silence so the loop region never starts in dead air.
+  const frameSec = 0.01;
+  const frameLen = Math.floor(sr * frameSec);
+  const nFrames  = Math.floor(rawData.length / frameLen);
+  const env = new Float32Array(nFrames);
+  for(let i = 0; i < nFrames; i++){
+    let sum = 0;
+    const off = i * frameLen;
+    for(let j = 0; j < frameLen; j++) sum += rawData[off+j] ** 2;
+    env[i] = Math.sqrt(sum / frameLen);
+  }
+  let peakRMS = 0;
+  for(let i = 0; i < nFrames; i++) if(env[i] > peakRMS) peakRMS = env[i];
+  const silenceThresh = peakRMS * 0.02; // 2% of peak = silence
+  let silenceEndFrame = 0;
+  for(let i = 0; i < nFrames; i++){
+    if(env[i] > silenceThresh){ silenceEndFrame = Math.max(0, i - 2); break; }
+  }
+  // Find trailing silence: last frame above threshold
+  let activeEndFrame = nFrames - 1;
+  for(let i = nFrames - 1; i > silenceEndFrame; i--){
+    if(env[i] > silenceThresh){ activeEndFrame = Math.min(nFrames - 1, i + 2); break; }
+  }
+
+  // ── Step 1: build energy envelope (already done above) ───────────────
+
+  // ── Step 2: subtract mean (de-trend), only over active region ────────
+  // De-trend: subtract mean of active region only (silence skews the mean)
+  let meanSum = 0, meanCount = 0;
+  for(let i = silenceEndFrame; i < nFrames; i++){ meanSum += env[i]; meanCount++; }
+  const mean = meanCount > 0 ? meanSum / meanCount : 0;
+  for(let i = 0; i < nFrames; i++) env[i] -= mean;
+
+  // ── Step 3: Hybrid BPM detection (IBI histogram + NSDF) ─────────────────
+  //
+  // For noisy/real-world heart sound recordings, NSDF alone is unreliable
+  // (r values stay low, ~0.4, making threshold selection fragile).
+  //
+  // Strategy: run TWO independent estimators and combine their votes.
+  //
+  // Estimator A — IBI histogram:
+  //   Detect energy peaks in the RMS envelope (loose threshold),
+  //   compute all inter-beat intervals, bin them into a histogram,
+  //   pick the most common IBI bin → converts to BPM.
+  //   This is robust to irregular spacing because it uses the MODE.
+  //
+  // Estimator B — NSDF (normalized autocorrelation):
+  //   Good for steady recordings, gives a continuous confidence value.
+  //
+  // Final BPM = whichever estimator has higher internal confidence,
+  // with a harmonic check (×2, ÷2) to reconcile the two.
+
+  const lagMin = Math.floor(0.25 / frameSec); // 250ms ≈ 240 bpm
+  const lagMax = Math.floor(1.50 / frameSec); // 1500ms ≈ 40 bpm
+  const acStart = silenceEndFrame;
+  const acEnd   = Math.min(nFrames, acStart + 900);
+
+  // ── Estimator A: IBI histogram ────────────────────────────────────────
+  // Use a low threshold to get many candidate peaks, then look at
+  // the DISTRIBUTION of intervals rather than individual peaks.
+  const envMax = env.reduce((a,b) => Math.max(a, Math.abs(b)), 0);
+  const looseThresh = envMax * 0.15; // 15% of peak — intentionally loose
+  const minGapFrames = Math.floor(0.25 / frameSec); // 250ms min gap between peaks
+
+  const rawPeaks = [];
+  for(let i = acStart + minGapFrames; i < nFrames - minGapFrames; i++){
+    if(env[i] < looseThresh) continue;
+    let ok = true;
+    for(let j = i - minGapFrames; j <= i + minGapFrames; j++){
+      if(j !== i && env[j] >= env[i]){ ok = false; break; }
+    }
+    if(ok) rawPeaks.push(i);
+  }
+
+  // Build IBI histogram (bin width = 20ms = 2 frames)
+  const BIN = 2; // frames per bin (20ms)
+  const histSize = Math.ceil(lagMax / BIN) + 1;
+  const ibiHist = new Int32Array(histSize);
+  for(let k = 1; k < rawPeaks.length; k++){
+    const ibi = rawPeaks[k] - rawPeaks[k-1];
+    if(ibi >= lagMin && ibi <= lagMax){
+      const bin = Math.floor(ibi / BIN);
+      if(bin < histSize) ibiHist[bin]++;
+    }
+  }
+  // Also count half-IBI (accounts for lub-dub double-detection)
+  for(let k = 2; k < rawPeaks.length; k++){
+    const ibi2 = rawPeaks[k] - rawPeaks[k-2]; // every 2nd peak
+    if(ibi2 >= lagMin && ibi2 <= lagMax){
+      const bin = Math.floor(ibi2 / BIN);
+      if(bin < histSize) ibiHist[bin] += 2; // weight 2× (cleaner interval)
+    }
+  }
+
+  // Find the histogram peak — smooth with a 3-bin window first
+  const histSmooth = new Float32Array(histSize);
+  for(let b = 1; b < histSize - 1; b++){
+    histSmooth[b] = (ibiHist[b-1] + ibiHist[b]*2 + ibiHist[b+1]) / 4;
+  }
+  let bestHistBin = 0, bestHistVal = 0;
+  for(let b = 0; b < histSize; b++){
+    if(histSmooth[b] > bestHistVal){ bestHistVal = histSmooth[b]; bestHistBin = b; }
+  }
+  const ibiFramesA = bestHistBin * BIN + BIN/2; // center of best bin
+  const bpmA = ibiFramesA > 0 ? Math.round(60 / (ibiFramesA * frameSec)) : 0;
+  // Confidence: ratio of best bin to total votes
+  const totalVotes = ibiHist.reduce((a,b)=>a+b,0);
+  const confA = totalVotes > 0 ? bestHistVal / totalVotes : 0;
+
+  // ── Estimator B: NSDF ─────────────────────────────────────────────────
+  const acRaw = new Float32Array(lagMax + 1);
+  for(let lag = lagMin; lag <= lagMax; lag++){
+    let corr = 0;
+    for(let i = acStart; i < acEnd - lag; i++) corr += env[i] * env[i + lag];
+    acRaw[lag] = corr;
+  }
+  // Prefix sums for normalization
+  const prefixSq = new Float64Array(nFrames + 1);
+  for(let i = 0; i < nFrames; i++) prefixSq[i+1] = prefixSq[i] + env[i]*env[i];
+  const nsdf = new Float32Array(lagMax + 1);
+  for(let lag = lagMin; lag <= lagMax; lag++){
+    const sumA2 = prefixSq[Math.min(acEnd-lag, nFrames)] - prefixSq[acStart];
+    const sumB2 = prefixSq[Math.min(acEnd, nFrames)]     - prefixSq[Math.min(acStart+lag, nFrames)];
+    const denom = sumA2 + sumB2;
+    nsdf[lag] = denom > 0 ? (2 * acRaw[lag]) / denom : 0;
+  }
+  // Find NSDF peaks, pick first one ≥ 80% of global max
+  const acPeaks = [];
+  for(let lag = lagMin+1; lag < lagMax; lag++){
+    if(nsdf[lag] > nsdf[lag-1] && nsdf[lag] > nsdf[lag+1]) acPeaks.push({lag, r: nsdf[lag]});
+  }
+  let bestR = 0, bestLagB = lagMin;
+  for(const p of acPeaks) if(p.r > bestR){ bestR = p.r; bestLagB = p.lag; }
+  // First peak ≥ 80% of global (fundamental frequency)
+  let bestLag = bestLagB;
+  for(const p of acPeaks){
+    if(p.r >= bestR * 0.80){ bestLag = p.lag; break; }
+  }
+  const bpmB = Math.round(60 / (bestLag * frameSec));
+  const confB = bestR; // NSDF r-value as confidence
+
+  // ── Combine A and B ───────────────────────────────────────────────────
+  // Check if bpmA and bpmB are harmonically compatible (within 15% of
+  // each other, or one is ≈ 2× the other).
+  function harmonicMatch(a, b){
+    if(a <= 0 || b <= 0) return false;
+    const r = a / b;
+    return (Math.abs(r - 1) < 0.15) ||
+           (Math.abs(r - 2) < 0.20) ||
+           (Math.abs(r - 0.5) < 0.10);
+  }
+
+  // ── Combine: prefer the lower (more fundamental) BPM when harmonically related
+  let bpmFinal;
+  if(bpmA > 0 && bpmB > 0 && harmonicMatch(bpmA, bpmB)){
+    const ratio = bpmA / bpmB;
+    if(Math.abs(ratio - 1) < 0.15){
+      // Essentially the same → weighted average
+      bpmFinal = Math.round((bpmA * confA + bpmB * confB) / (confA + confB + 0.001));
+    } else {
+      // Pick the LOWER of the two (more fundamental, less chance of double-counting)
+      bpmFinal = Math.min(bpmA, bpmB);
+    }
+  } else if(bpmA > 0 && confA > 0.10){
+    // IBI histogram has enough votes to trust
+    bpmFinal = bpmA;
+  } else if(bpmB > 0){
+    bpmFinal = bpmB;
+  } else {
+    bpmFinal = 80; // absolute fallback
+  }
+
+  // Final harmonic sanity: heart rate is almost always 50–180 bpm
+  // If way off, try ×2 or ÷2
+  if(bpmFinal > 180) bpmFinal = Math.round(bpmFinal / 2);
+  if(bpmFinal < 50)  bpmFinal = bpmFinal * 2;
+  bpmFinal = Math.max(40, Math.min(220, bpmFinal));
+  detectedBPM = bpmFinal;
+
+  // ── Step 5: find best 4-beat loop window ─────────────────────────────
+  // Approach: sliding window over the RMS envelope (frame-based, no peak list).
+  // For each candidate start frame (stepped by 1 beat), compute:
+  //   (a) Average RMS energy over the 4-beat window  → want HIGH
+  //   (b) RMS consistency (low variance across 4 sub-beats) → want LOW
+  // Best window = highest energy × consistency score.
+  // This is immune to peak-detection threshold issues.
+
+  const beatPeriodSec = 60 / detectedBPM;
+  const beatPeriodFrames = Math.round(beatPeriodSec / frameSec);
+  const beatsNeeded = 4;
+  const windowFrames = beatPeriodFrames * beatsNeeded;
+
+  // Rebuild env with original (non-de-trended) values for energy measurement
+  // Use the already-computed env[] (de-trended) — its absolute values still
+  // reflect amplitude, just shifted by mean.
+  // Precompute prefix sum of |env| for fast window averages
+  const prefixEnv = new Float64Array(nFrames + 1);
+  for(let i = 0; i < nFrames; i++) prefixEnv[i+1] = prefixEnv[i] + Math.abs(env[i]);
+
+  function windowMeanEnv(start, len){
+    const end = Math.min(start + len, nFrames);
+    return (prefixEnv[end] - prefixEnv[start]) / Math.max(1, end - start);
+  }
+
+  // Global mean energy (for normalization)
+  const globalMeanEnv = prefixEnv[nFrames] / nFrames;
+
+  // Step through candidate start frames (1 beat = beatPeriodFrames apart)
+  // but actually slide every 5 frames (~50ms) for finer resolution
+  const slideStep = 5;
+  let bestScore = -Infinity, bestStartFrame = silenceEndFrame;
+
+  // Minimum energy a sub-beat must have to count as "active" (not silence)
+  const subBeatFloor = globalMeanEnv * 0.20;
+
+  for(let f = silenceEndFrame; f + windowFrames <= activeEndFrame; f += slideStep){
+    // (a) Mean energy over the full 4-beat window
+    const meanE = windowMeanEnv(f, windowFrames);
+
+    // (b) Consistency: compare energy of each beat sub-window
+    //     Low variance across beats = consistent rhythm
+    let subMeanSum = 0, subMeanSqSum = 0, minSubE = Infinity;
+    for(let b = 0; b < beatsNeeded; b++){
+      const subE = windowMeanEnv(f + b * beatPeriodFrames, beatPeriodFrames);
+      subMeanSum += subE;
+      subMeanSqSum += subE * subE;
+      if(subE < minSubE) minSubE = subE;
+    }
+
+    // Reject windows where any sub-beat is silent (hits trailing/internal silence)
+    if(minSubE < subBeatFloor) continue;
+
+    const subMean = subMeanSum / beatsNeeded;
+    const subVar  = subMeanSqSum / beatsNeeded - subMean * subMean;
+    // Consistency = 1 / (1 + normalizedVariance)
+    const consistency = 1 / (1 + subVar / Math.max(globalMeanEnv * globalMeanEnv, 1e-10));
+
+    // Onset bonus: prefer windows that START in a quiet region (just before lub).
+    // Low amplitude at the first 50ms of the window = likely just before a beat onset.
+    const startFrames = Math.min(5, beatPeriodFrames);
+    const startE = windowMeanEnv(f, startFrames);
+    const onsetBonus = 1 / (1 + 2 * startE / Math.max(globalMeanEnv, 1e-10));
+
+    // Combined score: high energy × consistency × quiet-start bonus
+    const score = meanE * consistency * onsetBonus;
+    if(score > bestScore){ bestScore = score; bestStartFrame = f; }
+  }
+
+  loopStart = bestStartFrame * frameSec;
+  const exactBeatSec = beatPeriodSec;
+  loopDur = exactBeatSec * beatsNeeded;
+
+  // Clamp
+  if(loopStart + loopDur > rawBuffer.duration){
+    loopStart = Math.max(0, rawBuffer.duration - loopDur);
+  }
+
+  // Adjust loop boundaries for best timing feel and minimal click
+  {
+    const ch0 = rawBuffer.getChannelData(0);
+
+    // Snap both boundaries to nearest quiet point (±10ms) — clean loop, no cutout
+    function nearZero(timeSec){
+      const center = Math.round(timeSec * sr);
+      const r = Math.round(0.010 * sr);
+      let best = center, bestV = Infinity;
+      for(let i = Math.max(0,center-r); i < Math.min(ch0.length,center+r); i++){
+        const v = Math.abs(ch0[i]); if(v < bestV){ bestV = v; best = i; }
+      }
+      return best / sr;
+    }
+    const adjStart = nearZero(loopStart);
+    const adjEnd   = nearZero(loopStart + loopDur);
+    if(adjEnd > adjStart){ loopStart = adjStart; loopDur = adjEnd - adjStart; }
+  }
+
+  // peaks[] still needed for debug count — reuse rawPeaks from estimator A
+  const peaks = rawPeaks; // already computed above
+
+  buildLoopBuffer();
+  updateLoopRegion();
+
+  const info = `Detected: ${detectedBPM} bpm · Loop: ${loopStart.toFixed(2)}s – ${(loopStart+loopDur).toFixed(2)}s (${loopDur.toFixed(2)}s)`;
+  document.getElementById('detectInfo').textContent = '✓ ' + info;
+  document.getElementById('detectInfo').className = 'detect-info';
+  document.getElementById('bpmAdjDisplay').textContent = detectedBPM + ' bpm';
+  document.getElementById('debugInfo').textContent =
+    `A:${bpmA}(conf=${confA.toFixed(2)}) B:${bpmB}(r=${bestR.toFixed(2)}) →${detectedBPM}bpm | active=${(silenceEndFrame*frameSec).toFixed(2)}s–${(activeEndFrame*frameSec).toFixed(2)}s | votes=${totalVotes} | loopStart=${loopStart.toFixed(2)}s score=${bestScore.toFixed(4)}`;
+  updateMusicBpmLabel();
+  toast(ts('loaded'));
+}
+
+// ── Build crossfaded loop buffer ──────────────────────────────────────────
+// Strategy: keep the loop length exactly = loopDur (preserves beat period).
+// Crossfade only the *boundary*: the last xfSamples of the loop fade into
+// the first xfSamples, but we write that blend at the START of the buffer
+// so the Web Audio looping is seamless at the correct period.
+//
+//  Buffer layout (length = durSamples):
+//  [0 .. xf-1]          : crossfaded region (tail blended into head)
+//  [xf .. durSamples-1] : clean copy of source[loopStart+xf ..]
+//
+// This means every loop iteration is exactly durSamples long → beat stays locked.
+function buildLoopBuffer(){
+  if(!rawBuffer||!AC) return;
+  const sr=rawBuffer.sampleRate;
+  const xfSamples=Math.floor(CROSSFADE_MS/1000*sr);
+  const startSample=Math.max(0,Math.floor(loopStart*sr));
+  const durSamples=Math.floor(loopDur*sr);
+  const endSample=Math.min(rawBuffer.length,startSample+durSamples);
+  const actualDur=endSample-startSample;
+  if(actualDur<xfSamples*2){return;}
+
+  // loopBuffer is used only for WAV export — plain copy, no crossfade needed.
+  // Live playback uses rawBuffer + loopStart/loopEnd (Web Audio native loop).
+  const nc=rawBuffer.numberOfChannels;
+  const outBuf=AC.createBuffer(nc,actualDur,sr);
+  for(let ch=0;ch<nc;ch++){
+    const src=rawBuffer.getChannelData(ch);
+    const dst=outBuf.getChannelData(ch);
+    for(let i=0;i<actualDur;i++) dst[i]=src[startSample+i];
+  }
+  loopBuffer=outBuf;
+  // Don't restart here — caller (buildLoopBuffer is called from detect/shift)
+  // will handle restart if needed via their own logic
+  if(playing&&cs==='uploaded'){stopAll();startAll();}
+}
+
+// ── Waveform drawing ──────────────────────────────────────────────────────
+function drawWaveform(buf){
+  const canvas=document.getElementById('waveformCanvas');
+  const wrap=document.getElementById('waveformCanvasWrap');
+  canvas.width=wrap.clientWidth||400;
+  canvas.height=80;
+  const ctx=canvas.getContext('2d');
+  const data=buf.getChannelData(0);
+  const step=Math.ceil(data.length/canvas.width);
+  ctx.fillStyle='#FBEAF0';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.strokeStyle='#D4537E';
+  ctx.lineWidth=1;
+  ctx.beginPath();
+  for(let x=0;x<canvas.width;x++){
+    let min=1,max=-1;
+    for(let j=0;j<step;j++){
+      const v=data[x*step+j]||0;
+      if(v<min)min=v; if(v>max)max=v;
+    }
+    const yMin=(1-((min+1)/2))*canvas.height;
+    const yMax=(1-((max+1)/2))*canvas.height;
+    if(x===0)ctx.moveTo(x,yMin); else ctx.lineTo(x,yMin);
+    ctx.lineTo(x,yMax);
+  }
+  ctx.stroke();
+}
+
+// ── Music grid overlay ───────────────────────────────────────────────────
+// Draws vertical lines at each music beat position over the waveform.
+// The grid can be dragged left/right to adjust musicPhaseOffset.
+// This gives a visual + tactile way to align music beats to womb beats
+// without stopping playback.
+
+let gridDragActive = false;
+let gridDragStartX = 0;
+let gridDragStartPhase = 0;
+let loopDragActive = false;
+let loopDragStartX = 0;
+let loopDragStartLoopStart = 0;
+
+function drawMusicGrid(){
+  const canvas = document.getElementById('gridCanvas');
+  const wrap   = document.getElementById('waveformCanvasWrap');
+  if(!canvas || !rawBuffer) return;
+  canvas.width  = wrap.clientWidth  || 400;
+  canvas.height = wrap.clientHeight || 80;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if(!musicFileBuffer || detectedBPM === 0) return;
+
+  // Music beat period in waveform-time (seconds)
+  const heartBeatSec  = 60 / detectedBPM;
+  const rate          = calcPlaybackRate();
+  // In real time, music beat = heartBeatSec (because playbackRate syncs them)
+  const musicBeatSec  = heartBeatSec; // after rate adjustment they are aligned
+  const totalDur      = rawBuffer.duration;
+  const W             = canvas.width;
+
+  // Phase offset in real-time seconds
+  const phaseRealSec  = musicPhaseOffset * heartBeatSec;
+
+  // Draw grid lines for each music beat visible in the waveform window
+  ctx.strokeStyle = 'rgba(93,202,165,0.7)';
+  ctx.lineWidth   = 1.5;
+  ctx.setLineDash([4, 3]);
+
+  // First line position (may be before time 0 — wrap around)
+  let t = phaseRealSec % musicBeatSec;
+  if(t < 0) t += musicBeatSec;
+
+  while(t < totalDur){
+    const x = (t / totalDur) * W;
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, canvas.height);
+    ctx.stroke();
+    t += musicBeatSec;
+  }
+
+  // Label
+  ctx.setLineDash([]);
+  ctx.fillStyle = 'rgba(93,202,165,0.9)';
+  ctx.font = '10px DM Sans, sans-serif';
+  ctx.fillText('♩ music beat', 4, 12);
+}
+
+function initGridDrag(){
+  const wrap = document.getElementById('waveformCanvasWrap');
+  if(!wrap || wrap._gridDragInited) return;
+  wrap._gridDragInited = true;
+
+  function getClientX(e){ return e.touches ? e.touches[0].clientX : e.clientX; }
+  // Loop region drag
+  const loopEl = document.getElementById('loopRegion');
+  loopEl.addEventListener('mousedown', onLoopDragStart, {passive:false});
+  loopEl.addEventListener('touchstart', onLoopDragStart, {passive:false});
+  function onLoopDragStart(e){
+    if(!rawBuffer) return;
+    loopDragActive = true;
+    loopDragStartX = getClientX(e);
+    loopDragStartLoopStart = loopStart;
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  function onDragStart(e){
+    if(!musicFileBuffer) return;
+    gridDragActive    = true;
+    gridDragStartX    = getClientX(e);
+    gridDragStartPhase = musicPhaseOffset;
+    e.preventDefault();
+  }
+  function onDragMove(e){
+    if(loopDragActive){
+      const dx = getClientX(e) - loopDragStartX;
+      const W  = wrap.clientWidth || 400;
+      const dtSec = (dx / W) * rawBuffer.duration;
+      loopStart = Math.max(0, Math.min(rawBuffer.duration - loopDur, loopDragStartLoopStart + dtSec));
+      buildLoopBuffer();
+      updateLoopRegion();
+      const info=`${detectedBPM} bpm · ${loopStart.toFixed(2)}s – ${(loopStart+loopDur).toFixed(2)}s`;
+      document.getElementById('detectInfo').textContent='✓ '+info;
+      return;
+    }
+    if(!gridDragActive) return;
+    const dx   = getClientX(e) - gridDragStartX;
+    const W    = wrap.clientWidth || 400;
+    // dx in pixels → fraction of total waveform duration
+    const dtSec = (dx / W) * rawBuffer.duration;
+    // Convert to fraction of one beat period
+    const heartBeatSec = 60 / detectedBPM;
+    let newPhase = gridDragStartPhase + dtSec / heartBeatSec;
+    // Wrap to [0, 1)
+    newPhase = ((newPhase % 1) + 1) % 1;
+    musicPhaseOffset = newPhase;
+    drawMusicGrid();
+    // Live-update music playhead if playing
+    if(playing && cm === 'file' && musicFileBuffer) applyPhaseRestart();
+  }
+  function onDragEnd(){
+    gridDragActive = false;
+    loopDragActive = false;
+  }
+  wrap.addEventListener('mousedown',  onDragStart, {passive:false});
+  wrap.addEventListener('touchstart', onDragStart, {passive:false});
+  window.addEventListener('mousemove',  onDragMove);
+  window.addEventListener('touchmove',  onDragMove, {passive:true});
+  window.addEventListener('mouseup',   onDragEnd);
+  window.addEventListener('touchend',  onDragEnd);
+}
+
+function adjustDetectedBPM(delta){
+  if(detectedBPM===0) return;
+  if(delta===0){
+    detectedBPM=Math.max(40,Math.round(detectedBPM/2));
+  } else {
+    detectedBPM=Math.max(40,Math.min(220,detectedBPM+delta));
+  }
+  // Recalculate loop duration to match new BPM (keep loopStart, adjust length)
+  if(rawBuffer){
+    const newLoopDur = 4*(60/detectedBPM);
+    // Only adjust if it keeps us within the buffer
+    if(loopStart + newLoopDur <= rawBuffer.duration){
+      loopDur = newLoopDur;
+    }
+    buildLoopBuffer();
+    updateLoopRegion();
+  }
+  document.getElementById('bpmAdjDisplay').textContent=detectedBPM+' bpm';
+  document.getElementById('debugInfo').textContent=
+    'manual adjust → detectedBPM='+detectedBPM+' | rate='+calcPlaybackRate();
+  updateMusicBpmLabel();
+  const info=`${detectedBPM} bpm · ${loopStart.toFixed(2)}s – ${(loopStart+loopDur).toFixed(2)}s`;
+  document.getElementById('detectInfo').textContent='✓ '+info;
+  if(playing){stopAll();startAll();}
+}
+
+function beatOffsetLabel(beats){
+  if(beats===0) return '0';
+  const sign=beats>0?'+':'-';
+  const abs=Math.abs(beats);
+  const frac=abs===0.25?'¼':abs===0.5?'½':abs===0.75?'¾':abs+'';
+  return sign+frac+' beat';
+}
+function adjustMusicOffset(delta){
+  musicStartOffsetBeats=Math.round((musicStartOffsetBeats+delta)*4)/4;
+  const rel=Math.round((musicStartOffsetBeats-BASE_MUSIC_OFFSET)*4)/4;
+  document.getElementById('musicOffsetVal').textContent=beatOffsetLabel(rel);
+  if(playing){stopAll();startAll();}
+}
+
+function onMusicFine(val){
+  musicFineBPM=parseInt(val);
+  document.getElementById('musicFineVal').textContent=(musicFineBPM>=0?'+':'')+musicFineBPM+' bpm';
+  updateMusicBpmLabel();
+  // Live-update playbackRate without restarting
+  if(playing && mSrc && mSrc._src){
+    mSrc._src.playbackRate.value = calcPlaybackRate();
+  } else if(playing){
+    stopAll(); startAll();
+  }
+}
+
+// Phase is now controlled by dragging the music grid overlay on the waveform.
+// musicPhaseOffset (0.0–1.0) is updated by the drag handler below.
+
+function calcPhaseOffsetSec(){
+  // Intro = INTRO_BARS * beatSec = exact integer multiple of beatSec,
+  // so music always starts on beat 1 — no sync correction needed.
+  const beatSec = detectedBPM > 0 ? 60 / detectedBPM : 0;
+  const rate = calcPlaybackRate();
+  if(rate <= 0 || beatSec <= 0) return 0;
+  return (musicPhaseOffset * beatSec) / rate;
+}
+
+function applyPhaseRestart(){
+  // Seamlessly restart only the music source at new phase offset.
+  // Fade out old source quickly, start new one — no full stopAll/startAll.
+  if(!AC || !musicFileBuffer) return;
+  const ctx = AC;
+  const now = ctx.currentTime;
+  const FADE = 0.05; // 50ms fade to avoid click
+
+  // Fade out and stop old music source
+  if(mSrc && mGain){
+    const oldGain = mGain;
+    oldGain.gain.setValueAtTime(oldGain.gain.value, now);
+    oldGain.gain.linearRampToValueAtTime(0, now + FADE);
+    if(mSrc._src){ try{ mSrc._src.stop(now + FADE + 0.01); }catch(e){} }
+  }
+
+  // Start new music source with phase offset, fade in
+  const newGain = ctx.createGain();
+  newGain.gain.setValueAtTime(0, now);
+  newGain.gain.linearRampToValueAtTime(
+    parseInt(document.getElementById('vM').value) / 100,
+    now + FADE
+  );
+  newGain.connect(ctx.destination);
+
+  const s = ctx.createBufferSource();
+  s.buffer = musicFileBuffer;
+  s.loop = true;
+  s.playbackRate.value = calcPlaybackRate();
+  const offsetSec = calcPhaseOffsetSec();
+  s.connect(newGain);
+  s.start(now, offsetSec);
+
+  const newSrc = newGain;
+  newSrc._src = s;
+  newSrc._x = () => { try{ s.stop(); }catch(e){} };
+
+  mSrc = newSrc;
+  mGain = newGain;
+}
+
+function updateLoopRegion(){
+  if(!rawBuffer) return;
+  const wrap=document.getElementById('waveformCanvasWrap');
+  const region=document.getElementById('loopRegion');
+  const totalDur=rawBuffer.duration;
+  const left=(loopStart/totalDur)*100;
+  const width=(loopDur/totalDur)*100;
+  region.style.left=left+'%';
+  region.style.width=width+'%';
+  drawMusicGrid();
+}
+
+function shiftLoop(beats){
+  if(!rawBuffer||detectedBPM===0) return;
+  const beatDur=60/detectedBPM;
+  loopStart=Math.max(0,Math.min(rawBuffer.duration-loopDur,loopStart+beats*beatDur));
+  buildLoopBuffer();
+  updateLoopRegion();
+  const info=`${detectedBPM} bpm · ${loopStart.toFixed(2)}s – ${(loopStart+loopDur).toFixed(2)}s`;
+  document.getElementById('detectInfo').textContent='✓ '+info;
+  updateMusicBpmLabel();
+}
+
+// ── Womb sound preview (independent of main player) ──────────────────────
+let wombPrevAC=null, wombPrevSrc=null, wombPrevPlaying=false;
+
+function toggleWombPreview(){
+  if(wombPrevPlaying){
+    stopWombPreview();
+  } else {
+    startWombPreview();
+  }
+}
+
+let wombPrevStartAC=0, wombPrevRaf=null;
+
+function startWombPreview(){
+  if(!rawBuffer) return;
+  stopWombPreview();
+  if(!wombPrevAC) wombPrevAC=new(window.AudioContext||window.webkitAudioContext)();
+  if(wombPrevAC.state==='suspended') wombPrevAC.resume();
+  const s=wombPrevAC.createBufferSource();
+  s.buffer=rawBuffer;
+  s.connect(wombPrevAC.destination);
+  wombPrevStartAC=wombPrevAC.currentTime;
+  s.start(0);
+  s.onended=()=>stopWombPreview();
+  wombPrevSrc=s;
+  wombPrevPlaying=true;
+  document.getElementById('wombPrevBtn').classList.add('playing');
+  document.getElementById('wombPrevIco').className='ti ti-player-pause';
+  const ph=document.getElementById('wombPlayhead');
+  if(ph) ph.style.display='block';
+  animateWombPlayhead();
+}
+
+function animateWombPlayhead(){
+  if(!wombPrevPlaying||!wombPrevAC||!rawBuffer) return;
+  const elapsed=wombPrevAC.currentTime-wombPrevStartAC;
+  const progress=Math.min(elapsed/rawBuffer.duration,1);
+  const ph=document.getElementById('wombPlayhead');
+  if(ph) ph.style.left=(progress*100)+'%';
+  if(progress<1){
+    wombPrevRaf=requestAnimationFrame(animateWombPlayhead);
+  }
+}
+
+function stopWombPreview(){
+  if(wombPrevRaf){ cancelAnimationFrame(wombPrevRaf); wombPrevRaf=null; }
+  if(wombPrevSrc){ try{wombPrevSrc.stop();}catch(e){} wombPrevSrc=null; }
+  wombPrevPlaying=false;
+  const btn=document.getElementById('wombPrevBtn');
+  if(btn) btn.classList.remove('playing');
+  const ico=document.getElementById('wombPrevIco');
+  if(ico) ico.className='ti ti-player-play';
+  const ph=document.getElementById('wombPlayhead');
+  if(ph){ ph.style.display='none'; ph.style.left='0%'; }
+}
+
+// ── Audio engine ──────────────────────────────────────────────────────────
+function ensureAC(){
+  if(!AC) AC=new(window.AudioContext||window.webkitAudioContext)();
+  if(AC.state==='suspended') AC.resume();
+  return AC;
+}
+
+function buildWombSrc(ctx){
+  const out=ctx.createGain();
+  if(cs==='uploaded'){
+    if(!rawBuffer) return out;
+    const s=ctx.createBufferSource();
+    s.buffer=rawBuffer;
+    s.loop=true;
+    s.loopStart=loopStart;
+    s.loopEnd=loopStart+loopDur;
+    s.connect(out);
+    s.start(0,loopStart);
+    out._x=()=>{try{s.stop();}catch(e){}};
+    return out;
+  }
+  if(cs==='flow'){
+    const buf=ctx.createBuffer(1,ctx.sampleRate*3,ctx.sampleRate);
+    const d=buf.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*0.3;
+    const s=ctx.createBufferSource(); s.buffer=buf; s.loop=true;
+    const f=ctx.createBiquadFilter(); f.type='bandpass'; f.frequency.value=300; f.Q.value=2;
+    s.connect(f); f.connect(out); s.start(0); out._x=()=>{try{s.stop();}catch(e){}};
+    return out;
+  }
+  if(cs==='breath'){
+    const buf=ctx.createBuffer(1,ctx.sampleRate*3,ctx.sampleRate);
+    const d=buf.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*0.15;
+    const s=ctx.createBufferSource(); s.buffer=buf; s.loop=true;
+    const f=ctx.createBiquadFilter(); f.type='lowpass'; f.frequency.value=800;
+    const lfo=ctx.createOscillator(); lfo.frequency.value=0.25;
+    const lg=ctx.createGain(); lg.gain.value=400;
+    lfo.connect(lg); lg.connect(f.frequency);
+    s.connect(f); f.connect(out); s.start(0); lfo.start(0);
+    out._x=()=>{try{s.stop();lfo.stop();}catch(e){}};
+    return out;
+  }
+  // synth beat
+  const bpm=parseInt(document.getElementById('vT').value);
+  const iv=60000/bpm;
+  function beat(){
+    const e1=ctx.createGain(),e2=ctx.createGain();
+    const o1=ctx.createOscillator(),o2=ctx.createOscillator();
+    const fl=ctx.createBiquadFilter(); fl.type='lowpass'; fl.frequency.value=120;
+    o1.type='sine'; o1.frequency.value=60; o2.type='sine'; o2.frequency.value=80;
+    o1.connect(fl); fl.connect(e1); e1.connect(out); o2.connect(e2); e2.connect(out);
+    const tt=ctx.currentTime;
+    e1.gain.setValueAtTime(0,tt); e1.gain.linearRampToValueAtTime(0.7,tt+0.05); e1.gain.exponentialRampToValueAtTime(0.001,tt+0.3);
+    e2.gain.setValueAtTime(0,tt+0.25); e2.gain.linearRampToValueAtTime(0.4,tt+0.3); e2.gain.exponentialRampToValueAtTime(0.001,tt+0.55);
+    o1.start(tt); o1.stop(tt+0.35); o2.start(tt+0.25); o2.stop(tt+0.6);
+  }
+  beat(); const tid=setInterval(beat,iv); out._x=()=>clearInterval(tid);
+  return out;
+}
+
+function getMusicBPM(){
+  if(cm==='file'){
+    if(musicFileBPM>0){
+      const rate=calcPlaybackRate();
+      return Math.round(musicFileBPM*rate);
+    }
+    if(cs==='uploaded'&&detectedBPM>0) return detectedBPM>100?detectedBPM/2:detectedBPM;
+    return 70;
+  }
+  if(cs==='uploaded'&&detectedBPM>0){
+    return detectedBPM>100 ? detectedBPM/2 : detectedBPM;
+  }
+  return parseInt(document.getElementById('vT').value);
+}
+
+function getBestMult(){
+  // Returns the multiplier chosen by calcPlaybackRate for display purposes
+  if(!musicFileBPM||!detectedBPM) return 1;
+  const heartBPM=(cs==='uploaded'&&detectedBPM>0)?detectedBPM:0;
+  if(!heartBPM) return 1;
+  let bestMult=1,bestDiff=Infinity;
+  for(let mult=1;mult<=4;mult++){
+    const targetBPM=heartBPM*mult+musicFineBPM;
+    const rate=targetBPM/musicFileBPM;
+    if(rate<0.4||rate>2.5) continue;
+    const diff=Math.abs(rate-1.0);
+    if(diff<bestDiff){bestDiff=diff;bestMult=mult;}
+  }
+  return bestMult;
+}
+
+function updateMusicBpmLabel(){
+  if(musicFileBuffer&&musicFileBPM>0){
+    const rate=calcPlaybackRate();
+    const actualBPM=Math.round(musicFileBPM*rate);
+    const mult=getBestMult();
+    const multStr=mult>1?' (heart ×'+mult+')':'';
+    const fineStr=musicFineBPM!==0?' fine:'+(musicFineBPM>0?'+':'')+musicFineBPM:'';
+    document.getElementById('musicBpmLabel').textContent=
+      actualBPM+' bpm'+multStr+fineStr;
+    return;
+  }
+  const bpm=getMusicBPM();
+  const isAuto=(cs==='uploaded'&&detectedBPM>0);
+  const suffix=(detectedBPM>100&&isAuto)?' (½ of '+detectedBPM+' bpm)':'';
+  document.getElementById('musicBpmLabel').textContent=isAuto
+    ?'Auto — '+Math.round(bpm)+' bpm'+suffix
+    :'Manual — '+bpm+' bpm';
+}
+
+function buildMusicSrc(ctx, startAt){
+  // startAt: AudioContext time when music should begin (default = now)
+  if(cm==='none') return null;
+  const when = (startAt !== undefined) ? startAt : ctx.currentTime;
+  if(musicFileBuffer){
+    const out=ctx.createGain();
+    const s=ctx.createBufferSource();
+    s.buffer=musicFileBuffer; s.loop=true;
+    s.playbackRate.value=calcPlaybackRate();
+    s.connect(out);
+    s.start(when, calcPhaseOffsetSec());
+    out._src=s;
+    out._x=()=>{try{s.stop();}catch(e){}};
+    return out;
+  }
+  const out=ctx.createGain();
+  const fmap={lullaby:[261.6,329.6,392,523.3],ambient:[130.8,164.8,196,261.6],classical:[261.6,311.1,392,466.2],world:[220,246.9,293.7,369.9],electro:[110,138.6,164.8,220]};
+  const notes=fmap[cm]||fmap.lullaby; let idx=0;
+  const bpm=getMusicBPM(); const iv=60000/bpm*2;
+  function playN(){
+    const o=ctx.createOscillator(); o.type='sine'; o.frequency.value=notes[idx%notes.length]; idx++;
+    const e=ctx.createGain(); o.connect(e); e.connect(out);
+    const tt=ctx.currentTime;
+    e.gain.setValueAtTime(0,tt); e.gain.linearRampToValueAtTime(0.15,tt+0.3); e.gain.exponentialRampToValueAtTime(0.001,tt+iv/1000-0.1);
+    o.start(tt); o.stop(tt+iv/1000);
+  }
+  // Delay the synth music start using setTimeout
+  const delayMs=Math.max(0,(when-ctx.currentTime)*1000);
+  let tid;
+  const initTimer=setTimeout(()=>{ playN(); tid=setInterval(playN,iv); }, delayMs);
+  out._x=()=>{ clearTimeout(initTimer); clearInterval(tid); };
+  return out;
+}
+
+function startAll(){
+  stopWombPreview();
+  const ctx=ensureAC();
+  const bpm=getEffectiveBPM();
+  const beatSec=60/bpm;
+  const barSec=beatSec*4;          // 1小節 = 4拍
+  const introSec=INTRO_BARS*barSec+musicStartOffsetBeats*beatSec; // +offset
+  const fadeInSec=FADEIN_BARS*barSec; // 4小節
+  const targetW=parseInt(document.getElementById('vW').value)/100;
+
+  wGain=ctx.createGain();
+  wGain.gain.setValueAtTime(0,ctx.currentTime);
+  wGain.gain.linearRampToValueAtTime(targetW,ctx.currentTime+fadeInSec);
+  wSrc=buildWombSrc(ctx); wSrc.connect(wGain); wGain.connect(ctx.destination);
+
+  if(cm!=='none'){
+    // Music starts exactly at bar 9 — always on a beat boundary → perfect sync
+    const musicStartAt=ctx.currentTime+introSec;
+    mGain=ctx.createGain(); mGain.gain.value=parseInt(document.getElementById('vM').value)/100;
+    mSrc=buildMusicSrc(ctx,musicStartAt);
+    if(mSrc){mSrc.connect(mGain); mGain.connect(ctx.destination);}
+  }
+
+  document.getElementById('vizBox').classList.add('playing');
+  document.getElementById('pico').className='ti ti-player-pause';
+
+  // Countdown ticks once per beat
+  let bar=INTRO_BARS;
+  document.getElementById('npTitle').textContent='♩ '+bar;
+  clearInterval(musicIntroTimer);
+  musicIntroTimer=setInterval(()=>{
+    bar--;
+    if(bar>0){
+      document.getElementById('npTitle').textContent='♩ '+bar;
+    } else {
+      clearInterval(musicIntroTimer); musicIntroTimer=null;
+      document.getElementById('npTitle').textContent=NOW[cl];
+    }
+  },beatSec*1000);
+  startProg();
+}
+
+function stopAll(){
+  clearInterval(ptimer);
+  clearInterval(musicIntroTimer); musicIntroTimer=null;
+  if(wSrc&&wSrc._x) wSrc._x();
+  if(mSrc&&mSrc._x) mSrc._x();
+  wSrc=null; mSrc=null; wGain=null; mGain=null; mIntroGain=null;
+  document.getElementById('vizBox').classList.remove('playing');
+  document.getElementById('pico').className='ti ti-player-play';
+  document.getElementById('npTitle').textContent=READY[cl];
+  document.getElementById('pfill').style.width='0%';
+}
+
+function togglePlay(){
+  ensureAC();
+  if(playing){stopAll();playing=false;}else{startAll();playing=true;}
+}
+
+let pg=0;
+function startProg(){
+  pg=0; clearInterval(ptimer);
+  ptimer=setInterval(()=>{pg=(pg+0.5)%100;document.getElementById('pfill').style.width=pg+'%';},150);
+}
+
+// ── Download audio ────────────────────────────────────────────────────────
+function dlAudio(){
+  if(!AC){toast('Please press play first.');return;}
+  const sr=AC.sampleRate;
+  const dur=30;
+  const off=new OfflineAudioContext(2,sr*dur,sr);
+  const wg=off.createGain(); wg.gain.value=parseInt(document.getElementById('vW').value)/100;
+  const mg=off.createGain(); mg.gain.value=parseInt(document.getElementById('vM').value)/100;
+  wg.connect(off.destination); mg.connect(off.destination);
+
+  if(cs==='uploaded'&&(loopBuffer||rawBuffer)){
+    const buf=loopBuffer||rawBuffer;
+    const s=off.createBufferSource(); s.buffer=buf; s.loop=true;
+    s.connect(wg); s.start(0);
+  } else {
+    const wb=off.createBuffer(1,sr*dur,sr);
+    const wd=wb.getChannelData(0);
+    const bpm=parseInt(document.getElementById('vT').value);
+    const bl=Math.floor(sr*60/bpm);
+    for(let i=0;i<wd.length;i++){const p=i%bl,e=p<bl*0.3?Math.exp(-p/(bl*0.05)):0;wd[i]=Math.sin(2*Math.PI*60*i/sr)*e*0.6+(Math.random()*2-1)*0.05;}
+    const ws=off.createBufferSource(); ws.buffer=wb; ws.connect(wg); ws.start(0);
+  }
+
+  if(cm==='file'&&musicFileBuffer){
+    const ms=off.createBufferSource(); ms.buffer=musicFileBuffer; ms.loop=true;
+    ms.playbackRate.value=calcPlaybackRate();
+    ms.connect(mg); ms.start(0);
+  } else if(cm!=='none'){
+    const fm={lullaby:[261.6,329.6,392,523.3],nature:[174.6,220,261.6,349.2],piano:[293.7,370,440,587.3],classical:[261.6,311.1,392,466.2],ambient:[130.8,164.8,196,261.6]};
+    const notes=fm[cm]||fm.lullaby;
+    const bpm=getMusicBPM();
+    const nd=60/bpm*2;
+    for(let i=0;i*nd<dur;i++){
+      const o=off.createOscillator(),e=off.createGain();
+      o.type='sine'; o.frequency.value=notes[i%notes.length];
+      o.connect(e); e.connect(mg);
+      const tt=i*nd;
+      e.gain.setValueAtTime(0,tt); e.gain.linearRampToValueAtTime(0.15,tt+0.3); e.gain.exponentialRampToValueAtTime(0.001,tt+nd-0.1);
+      o.start(tt); o.stop(tt+nd);
+    }
+  }
+  toast(ts('gen'));
+  off.startRendering().then(buf=>{
+    const wav=toWav(buf);
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob([wav],{type:'audio/wav'}));
+    a.download=(document.getElementById('gMsg').value.trim()||'baby_harmony')+'_harmony.wav';
+    a.click(); toast(ts('dlA'));
+  }).catch(e=>toast('Error: '+e));
+}
+
+function toWav(buf){
+  const nc=buf.numberOfChannels,len=buf.length*nc*2+44;
+  const v=new DataView(new ArrayBuffer(len));
+  const ws=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i));};
+  const sr=buf.sampleRate;
+  ws(0,'RIFF');v.setUint32(4,len-8,true);ws(8,'WAVE');ws(12,'fmt ');
+  v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,nc,true);
+  v.setUint32(24,sr,true);v.setUint32(28,sr*nc*2,true);
+  v.setUint16(32,nc*2,true);v.setUint16(34,16,true);
+  ws(36,'data');v.setUint32(40,buf.length*nc*2,true);
+  let off=44;
+  for(let i=0;i<buf.length;i++) for(let c=0;c<nc;c++){
+    const s=Math.max(-1,Math.min(1,buf.getChannelData(c)[i]));
+    v.setInt16(off,s<0?s*0x8000:s*0x7FFF,true); off+=2;
+  }
+  return v.buffer;
+}
+
+function dlCard(){
+  const msg=document.getElementById('gMsg').value.trim()||'...';
+  const from=document.getElementById('gFrom').value.trim();
+  const sound=sName()+' × '+mn(cm);
+  const html='<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:Georgia,serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#fff5f8;margin:0;padding:2rem;box-sizing:border-box;}.card{background:white;border:1px solid #F4C0D1;border-radius:16px;padding:3rem;text-align:center;max-width:480px;width:100%;}.h{font-size:3rem;color:#D4537E;}.m{font-size:1.8rem;color:#333;margin:1rem 0;line-height:1.4;font-style:italic;}.d{height:1px;background:#F4C0D1;margin:1.5rem 0;}.s{font-size:14px;color:#888;}.tg{font-size:12px;color:#D4537E;}.fr{font-size:14px;color:#555;margin-top:1.5rem;}</style></head><body><div class="card"><div class="h">&#9829;</div><div class="m">'+msg+'</div><div class="d"></div><div class="s">'+sound+'</div><div class="tg">Womb sound × Music blend</div>'+(from?'<div class="fr">'+from+'</div>':'')+'</div></body></html>';
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([html],{type:'text/html'}));
+  a.download='baby_harmony_card.html'; a.click(); toast(ts('dlC'));
+}
+
+function doGift(){
+  if(!document.getElementById('gMsg').value.trim()){toast(ts('msg'));return;}
+  toast(ts('gift'));
+}
+
+function share(p){
+  const msg=document.getElementById('gMsg').value.trim()||'Baby Harmony Gift';
+  const url='https://babyharmony.app/s/abc123';
+  const txt=encodeURIComponent(msg+' #BabyHarmony');
+  if(p==='x') window.open('https://twitter.com/intent/tweet?text='+txt+'&url='+encodeURIComponent(url),'_blank');
+  else if(p==='line') window.open('https://line.me/R/msg/text/?'+txt+'%0A'+encodeURIComponent(url),'_blank');
+  else copyLink();
+}
+function copyLink(){
+  navigator.clipboard.writeText(document.getElementById('slink').textContent)
+    .then(()=>toast(ts('copied'))).catch(()=>toast(ts('fail')));
+}
+let toastTimer;
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.classList.remove('show'),3000);
+}
+</script>
+</body>
+</html>
