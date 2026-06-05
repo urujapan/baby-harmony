@@ -401,7 +401,7 @@ document.getElementById('fi').addEventListener('change',function(){
   const reader=new FileReader();
   reader.onload=function(e){
     AC.decodeAudioData(e.target.result,function(buf){
-      normalizeBuffer(buf, 0.08, true); // boost only if quiet, leave loud sounds unchanged
+      // Heart sound: no normalization — preserve original level
       rawBuffer=buf; cs='uploaded';
       document.querySelectorAll('.sbtn').forEach(b=>b.classList.remove('active'));
       document.getElementById('upinfo').style.display='flex';
@@ -605,7 +605,8 @@ function calcPlaybackRate(){
     const targetBPM = heartBPM * mult + musicFineBPM;
     const rate = targetBPM / musicFileBPM;
     if(rate < 0.4 || rate > 2.5) continue;
-    const diff = Math.abs(rate - 1.0);
+    // Penalize rate>1.0 by 15%: prefer slowing music down over speeding up
+    const diff = Math.abs(rate - 1.0) * (rate > 1.0 ? 1.15 : 1.0);
     if(diff < bestDiff){ bestDiff = diff; bestRate = rate; }
   }
 
@@ -998,14 +999,20 @@ function buildLoopBuffer(){
   const actualDur=endSample-startSample;
   if(actualDur<xfSamples*2){return;}
 
-  // loopBuffer is used only for WAV export — plain copy, no crossfade needed.
-  // Live playback uses rawBuffer + loopStart/loopEnd (Web Audio native loop).
+  // loopBuffer: used for both live playback and WAV export.
+  // 10ms fade-in + fade-out ensure the loop boundary is exactly 0 → no click.
   const nc=rawBuffer.numberOfChannels;
   const outBuf=AC.createBuffer(nc,actualDur,sr);
+  const fadeSamp=Math.round(0.010*sr); // 10ms
   for(let ch=0;ch<nc;ch++){
     const src=rawBuffer.getChannelData(ch);
     const dst=outBuf.getChannelData(ch);
     for(let i=0;i<actualDur;i++) dst[i]=src[startSample+i];
+    for(let i=0;i<fadeSamp;i++){
+      const t=i/fadeSamp;
+      dst[i]*=t;                   // fade in  0→1
+      dst[actualDur-1-i]*=t;       // fade out 1→0
+    }
   }
   loopBuffer=outBuf;
   // Don't restart here — caller (buildLoopBuffer is called from detect/shift)
@@ -1360,16 +1367,11 @@ function ensureAC(){
 function buildWombSrc(ctx){
   const out=ctx.createGain();
   if(cs==='uploaded'){
-    if(!rawBuffer) return out;
+    const buf=loopBuffer||rawBuffer;
+    if(!buf) return out;
     const s=ctx.createBufferSource();
-    s.buffer=rawBuffer;
-    s.loop=true;
-    s.loopStart=Math.max(0, loopStart);
-    s.loopEnd=Math.min(rawBuffer.duration-0.01, loopStart+loopDur);
-    // Safety: ensure loop is at least 1 second long
-    if(s.loopEnd-s.loopStart < 1.0) s.loopEnd=Math.min(rawBuffer.duration-0.01, s.loopStart+Math.max(loopDur,1.0));
-    s.connect(out);
-    s.start(0,loopStart);
+    s.buffer=buf; s.loop=true;
+    s.connect(out); s.start(0);
     out._x=()=>{try{s.stop();}catch(e){}};
     return out;
   }
