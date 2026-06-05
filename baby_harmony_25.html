@@ -448,6 +448,7 @@ const MUSIC_LIBRARY = {
 };
 const musicBufferCache = {};
 let selectedTrack = null;
+let musicPrevAC = null, musicPrevSrc = null, musicPrevTrackId = null;
 
 // ── Library track loading ────────────────────────────────────────────────
 async function loadMusicTrack(track){
@@ -498,8 +499,53 @@ function renderTrackPanel(type){
   const panel=document.getElementById('trackPanel');
   const tracks=MUSIC_LIBRARY[type];
   if(!tracks||tracks.length===0){panel.style.display='none';return;}
-  panel.innerHTML=tracks.map(t=>`<button class="track-item${selectedTrack&&selectedTrack.id===t.id?' active':''}" id="ti_${t.id}" onclick="selectTrack('${t.id}')"><i class="ti ti-music" style="font-size:14px;flex-shrink:0;"></i> ${t.title}</button>`).join('');
+  panel.innerHTML=tracks.map(t=>`
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+      <button class="track-prev-btn" id="prev_${t.id}" onclick="toggleMusicPreview('${t.id}',event)"
+        style="width:30px;height:30px;border-radius:50%;border:1px solid #eee;background:#f9f9f9;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <i class="ti ti-player-play" style="font-size:13px;color:#888;"></i>
+      </button>
+      <button class="track-item${selectedTrack&&selectedTrack.id===t.id?' active':''}" id="ti_${t.id}"
+        onclick="selectTrack('${t.id}')" style="flex:1;margin-bottom:0;">
+        ${t.title}
+      </button>
+    </div>`).join('');
   panel.style.display='block';
+}
+
+async function toggleMusicPreview(trackId, e){
+  e.stopPropagation();
+  if(musicPrevTrackId===trackId){
+    stopMusicPreview(); return;
+  }
+  stopMusicPreview();
+  let track=null;
+  for(const cat of Object.values(MUSIC_LIBRARY)){ track=cat.find(t=>t.id===trackId); if(track) break; }
+  if(!track) return;
+  const btn=document.getElementById('prev_'+trackId);
+  if(btn) btn.innerHTML='<i class="ti ti-loader spin" style="font-size:13px;color:#D4537E;"></i>';
+  try{
+    const buf=await loadMusicTrack(track);
+    if(!musicPrevAC) musicPrevAC=new(window.AudioContext||window.webkitAudioContext)();
+    if(musicPrevAC.state==='suspended') musicPrevAC.resume();
+    const s=musicPrevAC.createBufferSource();
+    s.buffer=buf; s.loop=true;
+    s.connect(musicPrevAC.destination); s.start(0);
+    s.onended=()=>stopMusicPreview();
+    musicPrevSrc=s; musicPrevTrackId=trackId;
+    if(btn) btn.innerHTML='<i class="ti ti-player-pause" style="font-size:13px;color:#D4537E;"></i>';
+  }catch(err){
+    toast('Preview error: '+err.message);
+    if(btn) btn.innerHTML='<i class="ti ti-player-play" style="font-size:13px;color:#888;"></i>';
+  }
+}
+
+function stopMusicPreview(){
+  if(musicPrevSrc){try{musicPrevSrc.stop();}catch(e){} musicPrevSrc=null;}
+  musicPrevTrackId=null;
+  document.querySelectorAll('.track-prev-btn').forEach(b=>{
+    b.innerHTML='<i class="ti ti-player-play" style="font-size:13px;color:#888;"></i>';
+  });
 }
 
 function musicDisplayName(){
@@ -1414,6 +1460,7 @@ function buildMusicSrc(ctx, startAt){
 
 function startAll(){
   stopWombPreview();
+  stopMusicPreview();
   const ctx=ensureAC();
   const bpm=getEffectiveBPM();
   const beatSec=60/bpm;
