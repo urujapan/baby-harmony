@@ -116,6 +116,13 @@ input[type=range]{flex:1;accent-color:#D4537E;}
 .track-item.loading{opacity:.6;pointer-events:none;}
 @keyframes spin{to{transform:rotate(360deg);}}
 .spin{display:inline-block;animation:spin .8s linear infinite;}
+.dl-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:200;display:flex;align-items:center;justify-content:center;}
+.dl-modal{background:white;border-radius:16px;padding:1.75rem;width:90%;max-width:400px;box-shadow:0 8px 40px rgba(0,0,0,0.15);}
+.dl-modal h3{font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:300;color:#333;margin-bottom:1.25rem;}
+.dl-modal label{font-size:12px;color:#888;display:block;margin-bottom:4px;}
+.dl-modal input,.dl-modal select{width:100%;padding:10px 14px;border:1px solid #eee;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:14px;color:#333;margin-bottom:1rem;outline:none;box-sizing:border-box;}
+.dl-modal input:focus,.dl-modal select:focus{border-color:#D4537E;}
+.dl-modal-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:.25rem;}
 .toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(20px);background:white;border:1px solid #eee;border-radius:12px;padding:12px 24px;font-size:14px;color:#333;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,0.08);}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 </style>
@@ -281,7 +288,7 @@ input[type=range]{flex:1;accent-color:#D4537E;}
     </div>
     <div class="divider"></div>
     <div class="arow">
-      <button class="abtn" onclick="dlAudio()"><i class="ti ti-download"></i> <span id="T20">Download Audio</span></button>
+      <button class="abtn" onclick="openDlModal()"><i class="ti ti-download"></i> <span id="T20">Download Audio</span></button>
       <button class="abtn" onclick="dlCard()"><i class="ti ti-file"></i> <span id="T21">Download Card</span></button>
       <button class="abtn primary" onclick="doGift()"><i class="ti ti-gift"></i> <span id="T22">Complete Gift</span></button>
     </div>
@@ -300,6 +307,24 @@ input[type=range]{flex:1;accent-color:#D4537E;}
     </div>
   </div>
 </div>
+</div>
+<div class="dl-modal-bg" id="dlModalBg" style="display:none;">
+  <div class="dl-modal">
+    <h3><i class="ti ti-download" style="color:#D4537E;margin-right:8px;"></i>Download Audio</h3>
+    <label>File name</label>
+    <input type="text" id="dlName" placeholder="baby_harmony">
+    <label>Duration</label>
+    <select id="dlDur">
+      <option value="60">1 minute</option>
+      <option value="120" selected>2 minutes</option>
+      <option value="180">3 minutes</option>
+      <option value="300">5 minutes</option>
+    </select>
+    <div class="dl-modal-btns">
+      <button class="abtn" onclick="closeDlModal()"><i class="ti ti-x"></i> Cancel</button>
+      <button class="abtn primary" onclick="doDownload()"><i class="ti ti-download"></i> Download</button>
+    </div>
+  </div>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -1601,43 +1626,72 @@ function seekMusic(e){
   out.connect(mGain); mSrc=out;
 }
 
+// ── Download modal ────────────────────────────────────────────────────────
+function openDlModal(){
+  const msg=document.getElementById('gMsg').value.trim();
+  document.getElementById('dlName').value=msg||'baby_harmony';
+  document.getElementById('dlModalBg').style.display='flex';
+}
+function closeDlModal(){
+  document.getElementById('dlModalBg').style.display='none';
+}
+function doDownload(){
+  closeDlModal();
+  dlAudio(
+    document.getElementById('dlName').value.trim()||'baby_harmony',
+    parseInt(document.getElementById('dlDur').value)
+  );
+}
+
 // ── Download audio ────────────────────────────────────────────────────────
-function dlAudio(){
-  if(!AC){toast('Please press play first.');return;}
+function dlAudio(filename, totalDur){
+  filename=filename||'baby_harmony';
+  if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();}
+  const bpm=getEffectiveBPM();
+  const beatSec=60/bpm;
+  const barSec=beatSec*4;
+  const introSec=INTRO_BARS*barSec+musicStartOffsetBeats*beatSec;
+  const fadeInSec=FADEIN_BARS*barSec;
+  totalDur=totalDur||120;
   const sr=AC.sampleRate;
-  const dur=30;
-  const off=new OfflineAudioContext(2,sr*dur,sr);
-  const wg=off.createGain(); wg.gain.value=parseInt(document.getElementById('vW').value)/100;
-  const mg=off.createGain(); mg.gain.value=parseInt(document.getElementById('vM').value)/100;
-  wg.connect(off.destination); mg.connect(off.destination);
+  const off=new OfflineAudioContext(2,sr*totalDur,sr);
+  const vW=parseInt(document.getElementById('vW').value)/100;
+  const vM=parseInt(document.getElementById('vM').value)/100;
+
+  // ── Womb sound: fade-in over fadeInSec, then full volume ─────────────
+  const wg=off.createGain();
+  wg.gain.setValueAtTime(0,0);
+  wg.gain.linearRampToValueAtTime(vW, fadeInSec);
+  wg.connect(off.destination);
 
   if(cs==='uploaded'&&(loopBuffer||rawBuffer)){
     const buf=loopBuffer||rawBuffer;
     const s=off.createBufferSource(); s.buffer=buf; s.loop=true;
     s.connect(wg); s.start(0);
   } else {
-    const wb=off.createBuffer(1,sr*dur,sr);
+    const wb=off.createBuffer(1,sr*totalDur,sr);
     const wd=wb.getChannelData(0);
-    const bpm=parseInt(document.getElementById('vT').value);
-    const bl=Math.floor(sr*60/bpm);
+    const sbpm=parseInt(document.getElementById('vT').value);
+    const bl=Math.floor(sr*60/sbpm);
     for(let i=0;i<wd.length;i++){const p=i%bl,e=p<bl*0.3?Math.exp(-p/(bl*0.05)):0;wd[i]=Math.sin(2*Math.PI*60*i/sr)*e*0.6+(Math.random()*2-1)*0.05;}
     const ws=off.createBufferSource(); ws.buffer=wb; ws.connect(wg); ws.start(0);
   }
 
+  // ── Music: starts after introSec ─────────────────────────────────────
+  const mg=off.createGain(); mg.gain.value=vM; mg.connect(off.destination);
   if(musicFileBuffer){
     const ms=off.createBufferSource(); ms.buffer=musicFileBuffer; ms.loop=true;
     ms.playbackRate.value=calcPlaybackRate();
-    ms.connect(mg); ms.start(0);
+    ms.connect(mg); ms.start(introSec, calcPhaseOffsetSec());
   } else if(cm!=='none'){
-    const fm={lullaby:[261.6,329.6,392,523.3],nature:[174.6,220,261.6,349.2],piano:[293.7,370,440,587.3],classical:[261.6,311.1,392,466.2],ambient:[130.8,164.8,196,261.6]};
+    const fm={lullaby:[261.6,329.6,392,523.3],ambient:[130.8,164.8,196,261.6],classical:[261.6,311.1,392,466.2],world:[220,246.9,293.7,369.9],electro:[110,138.6,164.8,220]};
     const notes=fm[cm]||fm.lullaby;
-    const bpm=getMusicBPM();
-    const nd=60/bpm*2;
-    for(let i=0;i*nd<dur;i++){
+    const mbpm=getMusicBPM(); const nd=60/mbpm*2;
+    for(let i=0;i*nd<totalDur-introSec;i++){
       const o=off.createOscillator(),e=off.createGain();
       o.type='sine'; o.frequency.value=notes[i%notes.length];
       o.connect(e); e.connect(mg);
-      const tt=i*nd;
+      const tt=introSec+i*nd;
       e.gain.setValueAtTime(0,tt); e.gain.linearRampToValueAtTime(0.15,tt+0.3); e.gain.exponentialRampToValueAtTime(0.001,tt+nd-0.1);
       o.start(tt); o.stop(tt+nd);
     }
@@ -1647,7 +1701,7 @@ function dlAudio(){
     const wav=toWav(buf);
     const a=document.createElement('a');
     a.href=URL.createObjectURL(new Blob([wav],{type:'audio/wav'}));
-    a.download=(document.getElementById('gMsg').value.trim()||'baby_harmony')+'_harmony.wav';
+    a.download=filename+'_harmony.wav';
     a.click(); toast(ts('dlA'));
   }).catch(e=>toast('Error: '+e));
 }
