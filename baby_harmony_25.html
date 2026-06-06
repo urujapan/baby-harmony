@@ -116,13 +116,6 @@ input[type=range]{flex:1;accent-color:#D4537E;}
 .track-item.loading{opacity:.6;pointer-events:none;}
 @keyframes spin{to{transform:rotate(360deg);}}
 .spin{display:inline-block;animation:spin .8s linear infinite;}
-.dl-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:200;display:flex;align-items:center;justify-content:center;}
-.dl-modal{background:white;border-radius:16px;padding:1.75rem;width:90%;max-width:400px;box-shadow:0 8px 40px rgba(0,0,0,0.15);}
-.dl-modal h3{font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:300;color:#333;margin-bottom:1.25rem;}
-.dl-modal label{font-size:12px;color:#888;display:block;margin-bottom:4px;}
-.dl-modal input,.dl-modal select{width:100%;padding:10px 14px;border:1px solid #eee;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:14px;color:#333;margin-bottom:1rem;outline:none;box-sizing:border-box;}
-.dl-modal input:focus,.dl-modal select:focus{border-color:#D4537E;}
-.dl-modal-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:.25rem;}
 .toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(20px);background:white;border:1px solid #eee;border-radius:12px;padding:12px 24px;font-size:14px;color:#333;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,0.08);}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 </style>
@@ -288,7 +281,7 @@ input[type=range]{flex:1;accent-color:#D4537E;}
     </div>
     <div class="divider"></div>
     <div class="arow">
-      <button class="abtn" onclick="openDlModal()"><i class="ti ti-download"></i> <span id="T20">Download Audio</span></button>
+      <button class="abtn" onclick="dlAudio()"><i class="ti ti-download"></i> <span id="T20">Download Audio</span></button>
       <button class="abtn" onclick="dlCard()"><i class="ti ti-file"></i> <span id="T21">Download Card</span></button>
       <button class="abtn primary" onclick="doGift()"><i class="ti ti-gift"></i> <span id="T22">Complete Gift</span></button>
     </div>
@@ -307,24 +300,6 @@ input[type=range]{flex:1;accent-color:#D4537E;}
     </div>
   </div>
 </div>
-</div>
-<div class="dl-modal-bg" id="dlModalBg" style="display:none;">
-  <div class="dl-modal">
-    <h3><i class="ti ti-download" style="color:#D4537E;margin-right:8px;"></i>Download Audio</h3>
-    <label>File name</label>
-    <input type="text" id="dlName" placeholder="baby_harmony">
-    <label>Duration</label>
-    <select id="dlDur">
-      <option value="60">1 minute</option>
-      <option value="120" selected>2 minutes</option>
-      <option value="180">3 minutes</option>
-      <option value="300">5 minutes</option>
-    </select>
-    <div class="dl-modal-btns">
-      <button class="abtn" onclick="closeDlModal()"><i class="ti ti-x"></i> Cancel</button>
-      <button class="abtn primary" onclick="doDownload()"><i class="ti ti-download"></i> Download</button>
-    </div>
-  </div>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -774,7 +749,11 @@ function runDetect(){
     if(ok) rawPeaks.push(i);
   }
 
-  // Build IBI histogram (bin width = 20ms = 2 frames)
+  // Build IBI histogram — two-pass approach for outlier rejection.
+  // Pass 1: find rough modal IBI including half-IBI (lub-dub) correction.
+  // Pass 2: recount only IBIs within ±35% of the rough modal → removes
+  //         double-beat (0.8s) and triple-beat (1.3s) outliers that occur
+  //         when the detector misses a beat in noisy recordings.
   const BIN = 2; // frames per bin (20ms)
   const histSize = Math.ceil(lagMax / BIN) + 1;
   const ibiHist = new Int32Array(histSize);
@@ -793,21 +772,53 @@ function runDetect(){
       if(bin < histSize) ibiHist[bin] += 2; // weight 2× (cleaner interval)
     }
   }
-
-  // Find the histogram peak — smooth with a 3-bin window first
+  // Smooth pass-1 histogram
   const histSmooth = new Float32Array(histSize);
   for(let b = 1; b < histSize - 1; b++){
     histSmooth[b] = (ibiHist[b-1] + ibiHist[b]*2 + ibiHist[b+1]) / 4;
   }
-  let bestHistBin = 0, bestHistVal = 0;
+  let roughBestBin = 0, roughBestVal = 0;
   for(let b = 0; b < histSize; b++){
-    if(histSmooth[b] > bestHistVal){ bestHistVal = histSmooth[b]; bestHistBin = b; }
+    if(histSmooth[b] > roughBestVal){ roughBestVal = histSmooth[b]; roughBestBin = b; }
+  }
+  // Pass 2: filter to ±35% of rough modal IBI, then re-find peak
+  const roughModalFrames = roughBestBin * BIN + BIN / 2;
+  const ibiLo = roughModalFrames * 0.65, ibiHi = roughModalFrames * 1.35;
+  const ibiHist2 = new Int32Array(histSize);
+  for(let k = 1; k < rawPeaks.length; k++){
+    const ibi = rawPeaks[k] - rawPeaks[k-1];
+    if(ibi >= ibiLo && ibi <= ibiHi){
+      const bin = Math.floor(ibi / BIN);
+      if(bin < histSize) ibiHist2[bin]++;
+    }
+  }
+  for(let k = 2; k < rawPeaks.length; k++){
+    const ibi2 = rawPeaks[k] - rawPeaks[k-2];
+    if(ibi2 >= ibiLo && ibi2 <= ibiHi){
+      const bin = Math.floor(ibi2 / BIN);
+      if(bin < histSize) ibiHist2[bin] += 2;
+    }
+  }
+  const histSmooth2 = new Float32Array(histSize);
+  for(let b = 1; b < histSize - 1; b++){
+    histSmooth2[b] = (ibiHist2[b-1] + ibiHist2[b]*2 + ibiHist2[b+1]) / 4;
+  }
+  let bestHistBin = roughBestBin;
+  { // use refined estimate only if pass-2 gathered enough votes
+    let v2total = 0; for(let i=0;i<histSize;i++) v2total += ibiHist2[i];
+    if(v2total >= 4){
+      let bv2 = 0, bb2 = roughBestBin;
+      for(let b = 0; b < histSize; b++){
+        if(histSmooth2[b] > bv2){ bv2 = histSmooth2[b]; bb2 = b; }
+      }
+      bestHistBin = bb2;
+    }
   }
   const ibiFramesA = bestHistBin * BIN + BIN/2; // center of best bin
   const bpmA = ibiFramesA > 0 ? Math.round(60 / (ibiFramesA * frameSec)) : 0;
-  // Confidence: ratio of best bin to total votes
+  // Confidence: ratio of best bin to total votes (pass-1 for comparability with confB)
   const totalVotes = ibiHist.reduce((a,b)=>a+b,0);
-  const confA = totalVotes > 0 ? bestHistVal / totalVotes : 0;
+  const confA = totalVotes > 0 ? roughBestVal / totalVotes : 0;
 
   // ── Estimator B: NSDF ─────────────────────────────────────────────────
   const acRaw = new Float32Array(lagMax + 1);
@@ -937,11 +948,13 @@ function runDetect(){
     // Consistency = 1 / (1 + normalizedVariance)
     const consistency = 1 / (1 + subVar / Math.max(globalMeanEnv * globalMeanEnv, 1e-10));
 
-    // Onset bonus: prefer windows that START in a quiet region (just before lub).
-    // Low amplitude at the first 50ms of the window = likely just before a beat onset.
-    const startFrames = Math.min(5, beatPeriodFrames);
-    const startE = windowMeanEnv(f, startFrames);
-    const onsetBonus = 1 / (1 + 2 * startE / Math.max(globalMeanEnv, 1e-10));
+    // Onset bonus: prefer windows that START in the quiet pre-beat valley.
+    // Search the first half-beat (up to 100ms) for the minimum energy — the
+    // deepest valley is the inter-beat silence just before a lub onset.
+    // Use 4× weight (was 2×) so the selector strongly prefers beat-aligned starts.
+    const preOnsetFrames = Math.min(Math.floor(beatPeriodFrames / 2), 10);
+    const preOnsetE = windowMeanEnv(f, preOnsetFrames);
+    const onsetBonus = 1 / (1 + 4 * preOnsetE / Math.max(globalMeanEnv, 1e-10));
 
     // Combined score: high energy × consistency × quiet-start bonus
     const score = meanE * consistency * onsetBonus;
@@ -961,20 +974,20 @@ function runDetect(){
   {
     const ch0 = rawBuffer.getChannelData(0);
 
-    // loopStart: search ±10ms for quietest point
+    // loopStart: search ±30ms for quietest point (inter-beat silence can be 50–100ms)
     function nearZero(timeSec){
       const center = Math.round(timeSec * sr);
-      const r = Math.round(0.010 * sr);
+      const r = Math.round(0.030 * sr);
       let best = center, bestV = Infinity;
       for(let i = Math.max(0,center-r); i < Math.min(ch0.length,center+r); i++){
         const v = Math.abs(ch0[i]); if(v < bestV){ bestV = v; best = i; }
       }
       return best / sr;
     }
-    // loopEnd: search BACKWARD only (never into trailing silence)
+    // loopEnd: search BACKWARD up to 40ms (was 15ms) — never into trailing silence
     function nearZeroBack(timeSec){
       const center = Math.round(timeSec * sr);
-      const r = Math.round(0.015 * sr);
+      const r = Math.round(0.040 * sr);
       let best = center, bestV = Infinity;
       for(let i = center; i >= Math.max(0, center-r); i--){
         const v = Math.abs(ch0[i]); if(v < bestV){ bestV = v; best = i; }
@@ -1024,18 +1037,25 @@ function buildLoopBuffer(){
   if(actualDur<xfSamples*2){return;}
 
   // loopBuffer: used for both live playback and WAV export.
-  // 10ms fade-in + fade-out ensure the loop boundary is exactly 0 → no click.
+  // Tail-to-head crossfade at the END of the buffer:
+  //   last xfSamples = tail × (1-t) + head × t   (t: 0→1)
+  // When Web Audio loops back to position 0 (pure head), the transition is
+  // seamless because the buffer already ends on pure head material.
+  // This is correct; the old independent fade-in/out created a 10ms dip at
+  // the loop boundary, causing audible stuttering on tight heartbeat loops.
   const nc=rawBuffer.numberOfChannels;
   const outBuf=AC.createBuffer(nc,actualDur,sr);
-  const fadeSamp=Math.round(0.010*sr); // 10ms
   for(let ch=0;ch<nc;ch++){
     const src=rawBuffer.getChannelData(ch);
     const dst=outBuf.getChannelData(ch);
     for(let i=0;i<actualDur;i++) dst[i]=src[startSample+i];
-    for(let i=0;i<fadeSamp;i++){
-      const t=i/fadeSamp;
-      dst[i]*=t;                   // fade in  0→1
-      dst[actualDur-1-i]*=t;       // fade out 1→0
+    // Crossfade: blend tail → head over last xfSamples
+    for(let i=0;i<xfSamples;i++){
+      const pos=actualDur-xfSamples+i;
+      const t=i/xfSamples;                      // 0→1
+      const tailSamp=src[startSample+pos];       // tail of loop
+      const headSamp=src[startSample+i];         // head of loop
+      dst[pos]=tailSamp*(1-t)+headSamp*t;
     }
   }
   loopBuffer=outBuf;
@@ -1626,72 +1646,43 @@ function seekMusic(e){
   out.connect(mGain); mSrc=out;
 }
 
-// ── Download modal ────────────────────────────────────────────────────────
-function openDlModal(){
-  const msg=document.getElementById('gMsg').value.trim();
-  document.getElementById('dlName').value=msg||'baby_harmony';
-  document.getElementById('dlModalBg').style.display='flex';
-}
-function closeDlModal(){
-  document.getElementById('dlModalBg').style.display='none';
-}
-function doDownload(){
-  closeDlModal();
-  dlAudio(
-    document.getElementById('dlName').value.trim()||'baby_harmony',
-    parseInt(document.getElementById('dlDur').value)
-  );
-}
-
 // ── Download audio ────────────────────────────────────────────────────────
-function dlAudio(filename, totalDur){
-  filename=filename||'baby_harmony';
-  if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();}
-  const bpm=getEffectiveBPM();
-  const beatSec=60/bpm;
-  const barSec=beatSec*4;
-  const introSec=INTRO_BARS*barSec+musicStartOffsetBeats*beatSec;
-  const fadeInSec=FADEIN_BARS*barSec;
-  totalDur=totalDur||120;
+function dlAudio(){
+  if(!AC){toast('Please press play first.');return;}
   const sr=AC.sampleRate;
-  const off=new OfflineAudioContext(2,sr*totalDur,sr);
-  const vW=parseInt(document.getElementById('vW').value)/100;
-  const vM=parseInt(document.getElementById('vM').value)/100;
-
-  // ── Womb sound: fade-in over fadeInSec, then full volume ─────────────
-  const wg=off.createGain();
-  wg.gain.setValueAtTime(0,0);
-  wg.gain.linearRampToValueAtTime(vW, fadeInSec);
-  wg.connect(off.destination);
+  const dur=30;
+  const off=new OfflineAudioContext(2,sr*dur,sr);
+  const wg=off.createGain(); wg.gain.value=parseInt(document.getElementById('vW').value)/100;
+  const mg=off.createGain(); mg.gain.value=parseInt(document.getElementById('vM').value)/100;
+  wg.connect(off.destination); mg.connect(off.destination);
 
   if(cs==='uploaded'&&(loopBuffer||rawBuffer)){
     const buf=loopBuffer||rawBuffer;
     const s=off.createBufferSource(); s.buffer=buf; s.loop=true;
     s.connect(wg); s.start(0);
   } else {
-    const wb=off.createBuffer(1,sr*totalDur,sr);
+    const wb=off.createBuffer(1,sr*dur,sr);
     const wd=wb.getChannelData(0);
-    const sbpm=parseInt(document.getElementById('vT').value);
-    const bl=Math.floor(sr*60/sbpm);
+    const bpm=parseInt(document.getElementById('vT').value);
+    const bl=Math.floor(sr*60/bpm);
     for(let i=0;i<wd.length;i++){const p=i%bl,e=p<bl*0.3?Math.exp(-p/(bl*0.05)):0;wd[i]=Math.sin(2*Math.PI*60*i/sr)*e*0.6+(Math.random()*2-1)*0.05;}
     const ws=off.createBufferSource(); ws.buffer=wb; ws.connect(wg); ws.start(0);
   }
 
-  // ── Music: starts after introSec ─────────────────────────────────────
-  const mg=off.createGain(); mg.gain.value=vM; mg.connect(off.destination);
   if(musicFileBuffer){
     const ms=off.createBufferSource(); ms.buffer=musicFileBuffer; ms.loop=true;
     ms.playbackRate.value=calcPlaybackRate();
-    ms.connect(mg); ms.start(introSec, calcPhaseOffsetSec());
+    ms.connect(mg); ms.start(0);
   } else if(cm!=='none'){
-    const fm={lullaby:[261.6,329.6,392,523.3],ambient:[130.8,164.8,196,261.6],classical:[261.6,311.1,392,466.2],world:[220,246.9,293.7,369.9],electro:[110,138.6,164.8,220]};
+    const fm={lullaby:[261.6,329.6,392,523.3],nature:[174.6,220,261.6,349.2],piano:[293.7,370,440,587.3],classical:[261.6,311.1,392,466.2],ambient:[130.8,164.8,196,261.6]};
     const notes=fm[cm]||fm.lullaby;
-    const mbpm=getMusicBPM(); const nd=60/mbpm*2;
-    for(let i=0;i*nd<totalDur-introSec;i++){
+    const bpm=getMusicBPM();
+    const nd=60/bpm*2;
+    for(let i=0;i*nd<dur;i++){
       const o=off.createOscillator(),e=off.createGain();
       o.type='sine'; o.frequency.value=notes[i%notes.length];
       o.connect(e); e.connect(mg);
-      const tt=introSec+i*nd;
+      const tt=i*nd;
       e.gain.setValueAtTime(0,tt); e.gain.linearRampToValueAtTime(0.15,tt+0.3); e.gain.exponentialRampToValueAtTime(0.001,tt+nd-0.1);
       o.start(tt); o.stop(tt+nd);
     }
@@ -1701,7 +1692,7 @@ function dlAudio(filename, totalDur){
     const wav=toWav(buf);
     const a=document.createElement('a');
     a.href=URL.createObjectURL(new Blob([wav],{type:'audio/wav'}));
-    a.download=filename+'_harmony.wav';
+    a.download=(document.getElementById('gMsg').value.trim()||'baby_harmony')+'_harmony.wav';
     a.click(); toast(ts('dlA'));
   }).catch(e=>toast('Error: '+e));
 }
