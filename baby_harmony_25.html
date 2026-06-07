@@ -108,6 +108,10 @@ input[type=range]{flex:1;accent-color:#D4537E;}
 .gdet{font-size:12px;color:#aaa;}
 .womb-prev-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:6px;border:1px solid #F4C0D1;background:#FBEAF0;font-size:12px;color:#D4537E;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:.75rem;}
 .womb-prev-btn.playing{background:#D4537E;color:white;border-color:#D4537E;}
+.hb-prev-btn{position:absolute;bottom:5px;right:6px;width:22px;height:22px;border-radius:50%;background:#D4537E;color:white;display:flex;align-items:center;justify-content:center;font-size:10px;cursor:pointer;transition:background .15s;}
+.hb-prev-btn:hover{background:#b83a68;}
+.hb-prev-btn.playing{background:#b83a68;}
+.hb-sample-btn{position:relative;padding-bottom:28px !important;}
 .track-panel{margin-top:8px;display:none;}
 .track-panel.show{display:block;}
 .track-item{display:flex;align-items:center;gap:8px;width:100%;padding:9px 12px;border-radius:8px;border:1px solid #eee;background:#f9f9f9;font-size:13px;color:#333;cursor:pointer;margin-bottom:6px;font-family:'DM Sans',sans-serif;text-align:left;}
@@ -146,9 +150,9 @@ input[type=range]{flex:1;accent-color:#D4537E;}
       <button class="sbtn active" onclick="pickSample(this,'beat')"><i class="ti ti-heart"></i> <span id="T5">Heartbeat</span><div class="ssub" id="T6">Synth · 80 bpm</div></button>
       <button class="sbtn" onclick="pickSample(this,'flow')"><i class="ti ti-wave-sine"></i> <span id="T7">Blood Flow</span><div class="ssub" id="T8">Soft waves</div></button>
       <button class="sbtn" onclick="pickSample(this,'breath')"><i class="ti ti-wind"></i> <span id="T9">Breathing</span><div class="ssub" id="T10">Gentle rhythm</div></button>
-      <button class="sbtn" onclick="pickHeartbeatSample(this,'HeartBeat Sample1_BPM138.mp3')"><i class="ti ti-heart-filled"></i> Sample 1<div class="ssub">Real · 138 bpm</div></button>
-      <button class="sbtn" onclick="pickHeartbeatSample(this,'HeartBeat Sample2_BPM175.mp3')"><i class="ti ti-heart-filled"></i> Sample 2<div class="ssub">Real · 175 bpm</div></button>
-      <button class="sbtn" onclick="pickHeartbeatSample(this,'HeartBeat Sample3_BPM150.mp3')"><i class="ti ti-heart-filled"></i> Sample 3<div class="ssub">Real · 150 bpm</div></button>
+      <button class="sbtn hb-sample-btn" onclick="pickHeartbeatSample(this,'HeartBeat Sample1_BPM138.mp3')"><i class="ti ti-heart-filled"></i> Sample 1<div class="ssub">Real · 138 bpm</div><span class="hb-prev-btn" onclick="event.stopPropagation();toggleSamplePreview(this,'HeartBeat Sample1_BPM138.mp3')" title="試聴"><i class="ti ti-player-play"></i></span></button>
+      <button class="sbtn hb-sample-btn" onclick="pickHeartbeatSample(this,'HeartBeat Sample2_BPM175.mp3')"><i class="ti ti-heart-filled"></i> Sample 2<div class="ssub">Real · 175 bpm</div><span class="hb-prev-btn" onclick="event.stopPropagation();toggleSamplePreview(this,'HeartBeat Sample2_BPM175.mp3')" title="試聴"><i class="ti ti-player-play"></i></span></button>
+      <button class="sbtn hb-sample-btn" onclick="pickHeartbeatSample(this,'HeartBeat Sample3_BPM150.mp3')"><i class="ti ti-heart-filled"></i> Sample 3<div class="ssub">Real · 150 bpm</div><span class="hb-prev-btn" onclick="event.stopPropagation();toggleSamplePreview(this,'HeartBeat Sample3_BPM150.mp3')" title="試聴"><i class="ti ti-player-play"></i></span></button>
     </div>
     <div id="uploadZone" class="upzone" style="display:none" onclick="document.getElementById('fi').click()">
       <p><i class="ti ti-upload" style="font-size:22px;display:block;margin-bottom:6px;color:#D4537E;"></i>
@@ -373,6 +377,48 @@ function pickSample(btn,type){
   updateMusicBpmLabel();
   updateNP(); refreshPreview();
   if(playing){stopAll();startAll();}
+}
+
+// ── Heartbeat sample quick-preview ──────────────────────────────────────────
+let _samplePrevSrc = null;   // currently playing preview source
+let _samplePrevBtn = null;   // the ▶ button element that started it
+const _sampleBufCache = {};  // decoded buffer cache for preview
+
+async function toggleSamplePreview(btn, filename){
+  // Stop any currently playing preview
+  if(_samplePrevSrc){
+    try{ _samplePrevSrc.stop(); }catch(e){}
+    _samplePrevSrc = null;
+    if(_samplePrevBtn){ _samplePrevBtn.classList.remove('playing'); _samplePrevBtn.innerHTML='<i class="ti ti-player-play"></i>'; }
+    if(_samplePrevBtn === btn){ _samplePrevBtn = null; return; } // toggle off
+    _samplePrevBtn = null;
+  }
+  // Load and play
+  btn.innerHTML = '<i class="ti ti-loader-2"></i>';
+  try {
+    if(!AC) AC = new(window.AudioContext||window.webkitAudioContext)();
+    if(!_sampleBufCache[filename]){
+      const res = await fetch(filename.split('/').map(s=>encodeURIComponent(s)).join('/'));
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      _sampleBufCache[filename] = await AC.decodeAudioData(await res.arrayBuffer());
+    }
+    const src = AC.createBufferSource();
+    src.buffer = _sampleBufCache[filename];
+    src.connect(AC.destination);
+    src.start();
+    src.onended = () => {
+      btn.classList.remove('playing');
+      btn.innerHTML = '<i class="ti ti-player-play"></i>';
+      if(_samplePrevSrc === src){ _samplePrevSrc = null; _samplePrevBtn = null; }
+    };
+    _samplePrevSrc = src;
+    _samplePrevBtn = btn;
+    btn.classList.add('playing');
+    btn.innerHTML = '<i class="ti ti-player-stop"></i>';
+  } catch(e){
+    btn.innerHTML = '<i class="ti ti-player-play"></i>';
+    toast('Preview error: '+e.message);
+  }
 }
 
 async function pickHeartbeatSample(btn, filename){
