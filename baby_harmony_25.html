@@ -1116,46 +1116,53 @@ function runDetect(){
   loopDur = exactBeatSec * beatsNeeded;
 
   // ── Lub-centric loop start placement ─────────────────────────────────────────
-  // DESIGN PRINCIPLE: The LUB (first audible heartbeat sound) must be the very
-  // FIRST thing the listener hears in each loop iteration.  When loopStart sits
-  // in the MIDDLE of the long inter-beat silence (e.g. 0.5 beats before the lub),
-  // the listener's brain marks the loop restart as beat 1 and hears the lub on the
-  // "and" — producing the "表拍と裏拍が逆" (back-beat) effect the user reported.
+  // DESIGN PRINCIPLE: The LUB must be the first audible sound in each loop iteration.
   //
-  // FIX: place loopStart = lubOnset − crossfadeDuration − 5 ms.
-  //   • The crossfade window lands entirely in silence  → no click, no attenuation
-  //     of the lub attack ("シュ" is preserved)
-  //   • The lub is the first sound after the crossfade  → feels like beat 1
-  //   • loopDur = exactly 4 × beatPeriodSec (unchanged) → loopEnd is 4 beat periods
-  //     later = same pre-lub silence phase → crossfade blends silence↔silence
-  //   • BASE_MUSIC_OFFSET = small value (≈ crossfadeDuration in beats) so the
-  //     music downbeat lands precisely on the lub onset.
+  // BUG that was causing "表拍と裏拍が逆" for Ambient Piano:
+  //   bestStartFrame can land INSIDE a lub or dub (not in silence).  Searching
+  //   forward from there found the DUB onset (second heart sound), not the LUB.
+  //   loopStart was then placed (xfDur+5ms) before the DUB = in the middle of the
+  //   LUB, so the music downbeat ended up aligned to the DUB → backbeat effect.
+  //
+  // FIX: anchor the forward search from the DEEPEST VALLEY (minimum env) near
+  //   bestStartFrame.  The valley is guaranteed to be in inter-beat silence
+  //   (de-trended env is most negative there).  Walking forward from silence,
+  //   the very first onset we find is always the LUB, never the DUB.
   {
     const xfDur        = Math.min(CROSSFADE_MS / 1000, beatPeriodSec * 0.10);
-    const safetyBefore = 0.005; // 5 ms of silence between crossfade end and lub
+    const safetyBefore = 0.005; // 5 ms safety gap between crossfade end and lub
 
-    // Find the first significant energy onset from bestStartFrame forward.
-    // env[] is de-trended: negative in silence, positive when energy > active mean.
-    // Threshold: 15 % of mean-absolute-deviation ≈ clearly above the noise floor.
-    const lubThresh  = globalMeanEnv * 0.15;
-    const lubSearchTo = Math.min(activeEndFrame, bestStartFrame + beatPeriodFrames);
+    // Step 1: find deepest valley within ±half-beat of bestStartFrame
+    const valHalf = Math.floor(beatPeriodSec / 2 / frameSec);
+    const valFrom = Math.max(silenceEndFrame, bestStartFrame - valHalf);
+    const valTo   = Math.min(activeEndFrame - Math.ceil(loopDur / frameSec),
+                             bestStartFrame + valHalf);
+    let valFrame = bestStartFrame, valMin = env[bestStartFrame];
+    for(let f = valFrom; f <= valTo; f++){
+      if(env[f] < valMin){ valMin = env[f]; valFrame = f; }
+    }
+    // Use valley only if it's genuinely in silence (de-trended env < 0)
+    const searchFrom = (valMin < 0) ? valFrame : bestStartFrame;
+
+    // Step 2: walk forward from the valley to find the LUB onset.
+    // Starting from silence guarantees the first threshold crossing = LUB, not DUB.
+    const lubThresh   = globalMeanEnv * 0.15;
+    const lubSearchTo = Math.min(activeEndFrame, searchFrom + beatPeriodFrames);
     let lubOnsetFrame = -1;
-    for(let f = bestStartFrame; f < lubSearchTo; f++){
+    for(let f = searchFrom + 1; f < lubSearchTo; f++){
       if(env[f] > lubThresh){ lubOnsetFrame = f; break; }
     }
 
     if(lubOnsetFrame >= 0){
       const lubOnsetTime = lubOnsetFrame * frameSec;
-      // Place loop start just before the lub (crossfade + 5 ms gap)
+      // Place loop start just before the lub (full crossfade + 5 ms in silence)
       const targetStart = lubOnsetTime - xfDur - safetyBefore;
       loopStart = Math.max(silenceEndFrame * frameSec, targetStart);
-
-      // Re-clamp against recording end
       if(loopStart + loopDur > rawBuffer.duration){
         loopStart = Math.max(0, rawBuffer.duration - loopDur);
       }
 
-      // Compute actual lub offset from the (possibly clamped) loopStart
+      // Set music offset so downbeat aligns with the lub onset
       const lubOffsetSec   = lubOnsetTime - loopStart;
       const lubOffsetBeats = lubOffsetSec / beatPeriodSec;
       // Quantise to nearest 1/8 beat; clamp [0, 0.875]
@@ -1163,7 +1170,7 @@ function runDetect(){
       BASE_MUSIC_OFFSET     = lubQ;
       musicStartOffsetBeats = lubQ;
     } else {
-      // Fallback: no clear onset detected — use window scorer result + keep offset
+      // Fallback: no onset found — use window scorer result unchanged
       loopStart = bestStartFrame * frameSec;
       if(loopStart + loopDur > rawBuffer.duration){
         loopStart = Math.max(0, rawBuffer.duration - loopDur);
