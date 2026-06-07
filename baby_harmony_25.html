@@ -1105,8 +1105,37 @@ function runDetect(){
     const preOnsetE = windowMeanEnv(f, preOnsetFrames);
     const onsetBonus = 1 / (1 + 4 * preOnsetE / Math.max(globalMeanEnv, 1e-10));
 
-    // Combined score: high energy × consistency × quiet-start bonus
-    const score = meanE * consistency * onsetBonus;
+    // Pulsatility: heartbeat has sharp transients (lub) followed by silence,
+    // giving a high peak-to-mean energy ratio within each beat period.
+    // Flat sounds (voices, noise, sustained tones) have a low ratio (≈1.0).
+    // For each sub-beat, compute max(|env|) / mean(|env|) and average across beats.
+    let pulseSum = 0;
+    for(let b = 0; b < beatsNeeded; b++){
+      const subStart = f + b * beatPeriodFrames;
+      const subEnd   = Math.min(nFrames, subStart + beatPeriodFrames);
+      let subPeak = 0;
+      for(let i = subStart; i < subEnd; i++){
+        const ae = Math.abs(env[i]);
+        if(ae > subPeak) subPeak = ae;
+      }
+      const subMeanE = windowMeanEnv(subStart, beatPeriodFrames);
+      pulseSum += subPeak / Math.max(subMeanE, 1e-10);
+    }
+    // Average peak/mean ratio across 4 sub-beats.
+    // Heartbeat typical: 2–6.  Flat noise / voice typical: 1.0–1.5.
+    // Normalise with a soft cap so extreme values don't dominate.
+    const pulsatility = pulseSum / beatsNeeded;
+    const pulseScore  = Math.min(pulsatility / 2.0, 2.5); // 1.0 at ratio=2, cap at 2.5
+
+    // Position preference: mildly penalise windows in the last 15 % of the
+    // active region.  Recording artefacts (end-of-session noise, operator talk)
+    // almost always appear at the end, never in the first 85 %.
+    const activeLen = Math.max(1, activeEndFrame - silenceEndFrame - windowFrames);
+    const relPos    = (f - silenceEndFrame) / activeLen; // 0 = start, 1 = end
+    const posScore  = relPos > 0.85 ? 1.0 - (relPos - 0.85) / 0.15 * 0.40 : 1.0;
+
+    // Combined score
+    const score = meanE * consistency * onsetBonus * pulseScore * posScore;
     if(score > bestScore){ bestScore = score; bestStartFrame = f; }
   }
 
