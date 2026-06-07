@@ -1023,6 +1023,10 @@ function runDetect(){
   //     (a) gives an out-of-range value (> 200 bpm, likely spurious), or
   //     (b) has low confidence — meaning no reliable external confirmation
   //       that bpmFinal is at the half-period.
+  //   AND confA > 0.22 — the IBI histogram must have a clear enough peak to trust.
+  //     Low confA (e.g. 0.15 for Twinkle with CV=50%) means the histogram is too
+  //     scattered to distinguish "halved BPM" from "genuinely slow heartbeat."
+  //     Applying the correction on low-confidence data produces the wrong BPM.
   //
   // Counter-example (Ambient Piano): bpmDirect ≈ 2× bpmFinal, BUT bpmB(NSDF) = 136
   //   (in range, high confidence r=0.63, ≈2×bpmFinal=69) → NSDF confirms the
@@ -1032,7 +1036,7 @@ function runDetect(){
     const nsdfInRange  = bpmB >= 50 && bpmB <= 200;
     const nsdfDoubles  = confB > 0.3 && nsdfInRange && (bpmB / Math.max(bpmFinal, 1)) >= 1.6;
     if(dRatio >= 1.7 && dRatio <= 2.4 && !nsdfDoubles &&
-       bpmDirect >= 80 && bpmDirect <= 200){
+       bpmDirect >= 80 && bpmDirect <= 200 && confA > 0.22){
       bpmFinal = bpmDirect; // replace halved estimate with direct-IBI result
     }
   }
