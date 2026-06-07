@@ -1224,7 +1224,7 @@ function runDetect(){
   document.getElementById('detectInfo').className = 'detect-info';
   document.getElementById('bpmAdjDisplay').textContent = detectedBPM + ' bpm';
   document.getElementById('debugInfo').textContent =
-    `A:${bpmA}(conf=${confA.toFixed(2)}) B:${bpmB}(r=${bestR.toFixed(2)}) →${detectedBPM}bpm | active=${(silenceEndFrame*frameSec).toFixed(2)}s–${(activeEndFrame*frameSec).toFixed(2)}s | votes=${totalVotes} | loopStart=${loopStart.toFixed(2)}s score=${bestScore.toFixed(4)}`;
+    `A:${bpmA}(conf=${confA.toFixed(2)}) B:${bpmB}(r=${bestR.toFixed(2)}) D:${bpmDirect} →${detectedBPM}bpm | active=${(silenceEndFrame*frameSec).toFixed(2)}s–${(activeEndFrame*frameSec).toFixed(2)}s | votes=${totalVotes} | loopStart=${loopStart.toFixed(2)}s score=${bestScore.toFixed(4)}`;
   updateMusicBpmLabel();
   toast(ts('loaded'));
 }
