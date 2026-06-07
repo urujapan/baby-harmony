@@ -146,6 +146,9 @@ input[type=range]{flex:1;accent-color:#D4537E;}
       <button class="sbtn active" onclick="pickSample(this,'beat')"><i class="ti ti-heart"></i> <span id="T5">Heartbeat</span><div class="ssub" id="T6">Synth · 80 bpm</div></button>
       <button class="sbtn" onclick="pickSample(this,'flow')"><i class="ti ti-wave-sine"></i> <span id="T7">Blood Flow</span><div class="ssub" id="T8">Soft waves</div></button>
       <button class="sbtn" onclick="pickSample(this,'breath')"><i class="ti ti-wind"></i> <span id="T9">Breathing</span><div class="ssub" id="T10">Gentle rhythm</div></button>
+      <button class="sbtn" onclick="pickHeartbeatSample(this,'HeartBeat Sample1_BPM138.mp3')"><i class="ti ti-heart-filled"></i> Sample 1<div class="ssub">Real · 138 bpm</div></button>
+      <button class="sbtn" onclick="pickHeartbeatSample(this,'HeartBeat Sample2_BPM175.mp3')"><i class="ti ti-heart-filled"></i> Sample 2<div class="ssub">Real · 175 bpm</div></button>
+      <button class="sbtn" onclick="pickHeartbeatSample(this,'HeartBeat Sample3_BPM150.mp3')"><i class="ti ti-heart-filled"></i> Sample 3<div class="ssub">Real · 150 bpm</div></button>
     </div>
     <div id="uploadZone" class="upzone" style="display:none" onclick="document.getElementById('fi').click()">
       <p><i class="ti ti-upload" style="font-size:22px;display:block;margin-bottom:6px;color:#D4537E;"></i>
@@ -370,6 +373,42 @@ function pickSample(btn,type){
   updateMusicBpmLabel();
   updateNP(); refreshPreview();
   if(playing){stopAll();startAll();}
+}
+
+async function pickHeartbeatSample(btn, filename){
+  document.querySelectorAll('.sbtn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  btn.disabled = true;
+  const origHTML = btn.innerHTML;
+  btn.innerHTML = '<i class="ti ti-loader-2"></i> Loading…';
+  try {
+    if(!AC) AC=new(window.AudioContext||window.webkitAudioContext)();
+    const encodedFile = filename.split('/').map(s=>encodeURIComponent(s)).join('/');
+    const res = await fetch(encodedFile);
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const arrayBuf = await res.arrayBuffer();
+    const buf = await AC.decodeAudioData(arrayBuf);
+    rawBuffer = buf; cs = 'uploaded';
+    document.getElementById('upinfo').style.display = 'flex';
+    document.getElementById('upname').textContent = filename.replace('.mp3','').replace('.MP3','');
+    document.getElementById('waveformWrap').classList.add('show');
+    drawWaveform(buf);
+    initGridDrag();
+    runDetect();
+    document.getElementById('tempoRow').style.display = 'none';
+    document.getElementById('musicBpmRow').style.display = 'flex';
+    updateMusicBpmLabel();
+    document.getElementById('phaseHint').classList.add('show');
+    updateNP(); refreshPreview();
+    if(playing){stopAll();startAll();}
+  } catch(e){
+    toast('Load error: '+e.message);
+    document.querySelectorAll('.sbtn').forEach(b=>b.classList.remove('active'));
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = origHTML;
+    btn.classList.toggle('active', cs==='uploaded');
+  }
 }
 function pickMusic(btn,type){
   document.querySelectorAll('.mbtn').forEach(b=>b.classList.remove('active'));
