@@ -1115,7 +1115,11 @@ function runDetect(){
       const periodHigh = Math.round(60 / bpmDirect / frameSec);
       ldScoreLow  = lubDubPatternScore(periodLow);
       ldScoreHigh = lubDubPatternScore(periodHigh);
-      if(ldScoreHigh > ldScoreLow * 1.20){
+      // Require ldScoreHigh to exceed a minimum absolute threshold.
+      // Prevents correction when both scores are near-zero (e.g. irregular
+      // recordings like Twinkle where neither period has clear lub-dub structure).
+      const minLDScore = 0.0008;
+      if(ldScoreHigh > ldScoreLow * 1.20 && ldScoreHigh >= minLDScore){
         bpmFinal = bpmDirect; // lub-dub pattern fits better at the higher BPM
       }
     }
