@@ -1014,32 +1014,90 @@ function runDetect(){
   if(bpmFinal < 50)  bpmFinal = bpmFinal * 2;
   bpmFinal = Math.max(40, Math.min(220, bpmFinal));
 
-  // ── Post-hoc half-period correction (targets files like "Memory of Birth") ──
-  // Problem: for files where half-IBI (weight×2) dominates the combined histogram,
-  // bpmFinal can be halved even when peaks are at the correct single-beat spacing.
+  // ── Lub-Dub pattern verifier ─────────────────────────────────────────────
+  // Folds the de-trended RMS envelope at a given beat period and scores how
+  // well the averaged waveform matches the lub-dub-silence structure of a
+  // real heartbeat.  Returns a scalar score (higher = better match).
   //
-  // Condition to apply: bpmDirect ≈ 2× bpmFinal (direct-only sees the true period)
-  //   AND the NSDF either:
-  //     (a) gives an out-of-range value (> 200 bpm, likely spurious), or
-  //     (b) has low confidence — meaning no reliable external confirmation
-  //       that bpmFinal is at the half-period.
-  //   AND confA > 0.17 — the IBI histogram must have a clear enough peak to trust.
-  //     Low confA (e.g. 0.15 for Twinkle with CV=50%) means the histogram is too
-  //     scattered to distinguish "halved BPM" from "genuinely slow heartbeat."
-  //     Applying the correction on low-confidence data produces the wrong BPM.
-  //     Memory of Birth has confA≈0.20 → passes this guard → correct 74→148bpm.
-  //     Twinkle has confA≈0.15 → blocked → stays at 76bpm correctly.
+  // Real heartbeat pattern (one period):
+  //   [LUB strong] [dub ~50% of LUB] [  silence  ]
+  //    0%─────25%   25%─────50%        50%──────100%
   //
-  // Counter-example (Ambient Piano): bpmDirect ≈ 2× bpmFinal, BUT bpmB(NSDF) = 136
-  //   (in range, high confidence r=0.63, ≈2×bpmFinal=69) → NSDF confirms the
-  //   harmonicMatch already picked the correct lower BPM → do NOT override.
+  // If bpmFinal is halved (e.g. 74 instead of 148), folding at 74bpm period
+  // stacks two lub-dub pairs per window.  The second LUB falls in the
+  // "silence" zone → silenceScore drops sharply → lower overall score.
+  function lubDubPatternScore(beatPeriodFrames) {
+    if(beatPeriodFrames < 8) return 0;
+    // Fold envelope at the given period (use positive part only)
+    const folded = new Float32Array(beatPeriodFrames);
+    let foldCount = 0;
+    for(let f = silenceEndFrame; f + beatPeriodFrames <= activeEndFrame; f += beatPeriodFrames){
+      for(let i = 0; i < beatPeriodFrames; i++) folded[i] += Math.max(0, env[f + i]);
+      foldCount++;
+    }
+    if(foldCount < 2) return 0;
+    for(let i = 0; i < beatPeriodFrames; i++) folded[i] /= foldCount;
+
+    // LUB: strongest peak in first 55% of period
+    const lubZone = Math.floor(beatPeriodFrames * 0.55);
+    let lubPeak = 0, lubIdx = 0;
+    for(let i = 0; i < lubZone; i++){
+      if(folded[i] > lubPeak){ lubPeak = folded[i]; lubIdx = i; }
+    }
+    if(lubPeak <= 0) return 0;
+
+    // DUB: peak in 15-75% of period, at least 4 frames after LUB
+    const dubFrom = Math.max(lubIdx + 4, Math.floor(beatPeriodFrames * 0.15));
+    const dubTo   = Math.floor(beatPeriodFrames * 0.75);
+    let dubPeak = 0;
+    for(let i = dubFrom; i < dubTo; i++) if(folded[i] > dubPeak) dubPeak = folded[i];
+    const dubRatio = dubPeak / lubPeak;
+
+    // Reward dub/lub ratio in 0.20-0.85 range (real heartbeat)
+    let ratioScore;
+    if     (dubRatio < 0.10)  ratioScore = 0.15;
+    else if(dubRatio < 0.20)  ratioScore = 0.15 + (dubRatio - 0.10) / 0.10 * 0.55;
+    else if(dubRatio <= 0.85) ratioScore = 0.70;
+    else                       ratioScore = Math.max(0.15, 0.70 - (dubRatio - 0.85) / 0.15 * 0.55);
+
+    // Silence: last 25% should be quiet (penalises double-period folds)
+    const silFrom = Math.floor(beatPeriodFrames * 0.75);
+    let silMean = 0;
+    for(let i = silFrom; i < beatPeriodFrames; i++) silMean += folded[i];
+    silMean /= (beatPeriodFrames - silFrom);
+    const silenceScore = 1.0 - Math.min(1.0, silMean / lubPeak);
+
+    return lubPeak * (0.40 * ratioScore + 0.60 * silenceScore);
+  }
+
+  // ── Post-hoc half-period correction ──────────────────────────────────────
+  // Problem: for files where half-IBI (weight×2) dominates the combined
+  // histogram, bpmFinal is halved even though peaks are at the correct
+  // single-beat spacing.
+  //
+  // Guard: bpmDirect ≈ 2× bpmFinal AND NSDF does not confirm the lower BPM.
+  // Decision: compare lub-dub pattern fitness at both candidate periods.
+  //   If the higher BPM (bpmDirect) fits the lub-dub structure ≥20% better
+  //   than the lower BPM, switch to bpmDirect.
+  //
+  // Why this is better than a fixed confA threshold:
+  //   It uses the actual shape of the heartbeat waveform rather than a
+  //   hand-tuned number, so it generalises to new recordings automatically.
+  let ldScoreLow = 0, ldScoreHigh = 0; // exposed for debug display
   {
-    const dRatio = bpmDirect / Math.max(bpmFinal, 1);
-    const nsdfInRange  = bpmB >= 50 && bpmB <= 200;
-    const nsdfDoubles  = confB > 0.3 && nsdfInRange && (bpmB / Math.max(bpmFinal, 1)) >= 1.6;
+    const dRatio      = bpmDirect / Math.max(bpmFinal, 1);
+    const nsdfInRange = bpmB >= 50 && bpmB <= 200;
+    const nsdfDoubles = confB > 0.3 && nsdfInRange && (bpmB / Math.max(bpmFinal, 1)) >= 1.6;
+
     if(dRatio >= 1.7 && dRatio <= 2.4 && !nsdfDoubles &&
-       bpmDirect >= 80 && bpmDirect <= 200 && confA > 0.17){
-      bpmFinal = bpmDirect; // replace halved estimate with direct-IBI result
+       bpmDirect >= 80 && bpmDirect <= 200){
+      const periodLow  = Math.round(60 / bpmFinal  / frameSec);
+      const periodHigh = Math.round(60 / bpmDirect / frameSec);
+      ldScoreLow  = lubDubPatternScore(periodLow);
+      ldScoreHigh = lubDubPatternScore(periodHigh);
+      if(ldScoreHigh > ldScoreLow * 1.20){
+        bpmFinal = bpmDirect; // lub-dub pattern fits better at the higher BPM
+      }
     }
   }
 
@@ -1224,7 +1282,7 @@ function runDetect(){
   document.getElementById('detectInfo').className = 'detect-info';
   document.getElementById('bpmAdjDisplay').textContent = detectedBPM + ' bpm';
   document.getElementById('debugInfo').textContent =
-    `A:${bpmA}(conf=${confA.toFixed(2)}) B:${bpmB}(r=${bestR.toFixed(2)}) D:${bpmDirect} →${detectedBPM}bpm | active=${(silenceEndFrame*frameSec).toFixed(2)}s–${(activeEndFrame*frameSec).toFixed(2)}s | votes=${totalVotes} | loopStart=${loopStart.toFixed(2)}s score=${bestScore.toFixed(4)}`;
+    `A:${bpmA}(conf=${confA.toFixed(2)}) B:${bpmB}(r=${bestR.toFixed(2)}) D:${bpmDirect} LD:${ldScoreLow.toFixed(3)}vs${ldScoreHigh.toFixed(3)} →${detectedBPM}bpm | active=${(silenceEndFrame*frameSec).toFixed(2)}s–${(activeEndFrame*frameSec).toFixed(2)}s | votes=${totalVotes} | loopStart=${loopStart.toFixed(2)}s score=${bestScore.toFixed(4)}`;
   updateMusicBpmLabel();
   toast(ts('loaded'));
 }
