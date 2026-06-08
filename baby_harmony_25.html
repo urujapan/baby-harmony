@@ -1016,19 +1016,23 @@ function runDetect(){
 
   // ── Lub-Dub pattern verifier ─────────────────────────────────────────────
   // Folds the de-trended RMS envelope at a given beat period and scores how
-  // well the averaged waveform matches the lub-dub-silence structure of a
-  // real heartbeat.  Returns a scalar score (higher = better match).
+  // well it represents ONE true heartbeat cycle (not a doubled period).
   //
-  // Real heartbeat pattern (one period):
-  //   [LUB strong] [dub ~50% of LUB] [  silence  ]
-  //    0%─────25%   25%─────50%        50%──────100%
+  // Core discriminator — half-period similarity (halfSim):
+  //   If we fold at the DOUBLED period (e.g. 74bpm when real BPM is 146),
+  //   the first half of the folded waveform is nearly identical to the
+  //   second half (both contain a full lub-dub pair).
+  //   → cross-correlation of the two halves is HIGH → halfScore is LOW.
   //
-  // If bpmFinal is halved (e.g. 74 instead of 148), folding at 74bpm period
-  // stacks two lub-dub pairs per window.  The second LUB falls in the
-  // "silence" zone → silenceScore drops sharply → lower overall score.
+  //   If we fold at the CORRECT period (146bpm), the first half has the
+  //   lub-dub peaks and the second half is silence.
+  //   → cross-correlation is LOW → halfScore is HIGH.
+  //
+  // This directly distinguishes "bpmFinal halved" from "genuinely slow"
+  // without relying on hand-tuned thresholds.
   function lubDubPatternScore(beatPeriodFrames) {
     if(beatPeriodFrames < 8) return 0;
-    // Fold envelope at the given period (use positive part only)
+    // Fold envelope at the given period (positive part only after de-trending)
     const folded = new Float32Array(beatPeriodFrames);
     let foldCount = 0;
     for(let f = silenceEndFrame; f + beatPeriodFrames <= activeEndFrame; f += beatPeriodFrames){
@@ -1038,7 +1042,7 @@ function runDetect(){
     if(foldCount < 2) return 0;
     for(let i = 0; i < beatPeriodFrames; i++) folded[i] /= foldCount;
 
-    // LUB: strongest peak in first 55% of period
+    // LUB: dominant peak in first 55% of the period
     const lubZone = Math.floor(beatPeriodFrames * 0.55);
     let lubPeak = 0, lubIdx = 0;
     for(let i = 0; i < lubZone; i++){
@@ -1046,28 +1050,44 @@ function runDetect(){
     }
     if(lubPeak <= 0) return 0;
 
-    // DUB: peak in 15-75% of period, at least 4 frames after LUB
+    // ── Half-period similarity (primary discriminator) ────────────────────
+    // Compute normalised cross-correlation of first half vs second half.
+    // High value → true period is half of beatPeriodFrames → penalise.
+    const halfLen = Math.floor(beatPeriodFrames / 2);
+    let crossSum = 0, norm1 = 0, norm2 = 0;
+    for(let i = 0; i < halfLen; i++){
+      const a = folded[i], b = folded[i + halfLen];
+      crossSum += a * b;
+      norm1    += a * a;
+      norm2    += b * b;
+    }
+    const halfSim   = crossSum / Math.sqrt(Math.max(norm1 * norm2, 1e-20));
+    // halfScore: high when first≠second half (correct period), low when similar (doubled period)
+    const halfScore = 1.0 - Math.max(0, Math.min(1, halfSim));
+
+    // ── Supporting scores ─────────────────────────────────────────────────
+    // DUB: secondary peak in 15-75% of period, at least 4 frames after LUB
     const dubFrom = Math.max(lubIdx + 4, Math.floor(beatPeriodFrames * 0.15));
     const dubTo   = Math.floor(beatPeriodFrames * 0.75);
     let dubPeak = 0;
     for(let i = dubFrom; i < dubTo; i++) if(folded[i] > dubPeak) dubPeak = folded[i];
     const dubRatio = dubPeak / lubPeak;
-
-    // Reward dub/lub ratio in 0.20-0.85 range (real heartbeat)
     let ratioScore;
     if     (dubRatio < 0.10)  ratioScore = 0.15;
     else if(dubRatio < 0.20)  ratioScore = 0.15 + (dubRatio - 0.10) / 0.10 * 0.55;
     else if(dubRatio <= 0.85) ratioScore = 0.70;
     else                       ratioScore = Math.max(0.15, 0.70 - (dubRatio - 0.85) / 0.15 * 0.55);
 
-    // Silence: last 25% should be quiet (penalises double-period folds)
+    // Silence: last 25% should be quiet
     const silFrom = Math.floor(beatPeriodFrames * 0.75);
     let silMean = 0;
     for(let i = silFrom; i < beatPeriodFrames; i++) silMean += folded[i];
     silMean /= (beatPeriodFrames - silFrom);
     const silenceScore = 1.0 - Math.min(1.0, silMean / lubPeak);
 
-    return lubPeak * (0.40 * ratioScore + 0.60 * silenceScore);
+    // halfScore is the dominant term (60%) — this is the key discriminator.
+    // ratioScore + silenceScore add supporting evidence.
+    return lubPeak * (0.60 * halfScore + 0.20 * ratioScore + 0.20 * silenceScore);
   }
 
   // ── Post-hoc half-period correction ──────────────────────────────────────
