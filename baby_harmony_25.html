@@ -2051,6 +2051,26 @@ function toast(msg){
   clearTimeout(toastTimer);
   toastTimer=setTimeout(()=>el.classList.remove('show'),3000);
 }
+
+// ── Safari AudioContext unlock ────────────────────────────────────────────
+// Safari keeps AudioContext in 'suspended' state until a user gesture occurs.
+// This handler runs once on the first touch/click anywhere on the page and
+// resumes all AudioContexts, ensuring audio works without requiring mic permission.
+(function(){
+  function unlockAudio(){
+    [AC, wombPrevAC, musicPrevAC].forEach(ctx => {
+      if(ctx && ctx.state === 'suspended') ctx.resume();
+    });
+    // Also pre-create AC on first interaction so it starts in correct state
+    if(!AC){
+      try{ AC = new(window.AudioContext||window.webkitAudioContext)(); } catch(e){}
+    }
+    document.removeEventListener('touchstart', unlockAudio);
+    document.removeEventListener('mousedown',  unlockAudio);
+  }
+  document.addEventListener('touchstart', unlockAudio, {passive:true});
+  document.addEventListener('mousedown',  unlockAudio, {passive:true});
+})();
 </script>
 </body>
 </html>
