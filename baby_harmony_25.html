@@ -655,9 +655,9 @@ function trackCompatLevel(trackBpm){
   if(!trackBpm || !(cs==='uploaded' && detectedBPM > 0)) return 'good';
   const rate = calcRateForTrackBpm(trackBpm);
   const dev  = Math.abs(rate - 1.0);
-  if(dev <= 0.10) return 'best';
-  if(dev <= 0.25) return 'good';
-  return 'poor';
+  if(dev <= 0.08) return 'best'; // rate 0.92–1.08: almost perfect tempo match
+  if(dev <= 0.18) return 'good'; // rate 0.82–1.18: noticeable but acceptable
+  return 'poor';                  // rate < 0.82 or > 1.18: clearly mismatched
 }
 
 function renderTrackPanel(type){
@@ -2039,7 +2039,8 @@ function dlAudio(){
   if(musicFileBuffer){
     const ms=off.createBufferSource(); ms.buffer=musicFileBuffer; ms.loop=true;
     ms.playbackRate.value=calcPlaybackRate();
-    ms.connect(mg); ms.start(0);
+    ms.connect(mg);
+    ms.start(0, calcPhaseOffsetSec()); // apply same phase offset as preview
   } else if(cm!=='none'){
     const fm={lullaby:[261.6,329.6,392,523.3],nature:[174.6,220,261.6,349.2],piano:[293.7,370,440,587.3],classical:[261.6,311.1,392,466.2],ambient:[130.8,164.8,196,261.6]};
     const notes=fm[cm]||fm.lullaby;
