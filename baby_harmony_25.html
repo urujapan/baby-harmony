@@ -118,6 +118,8 @@ input[type=range]{flex:1;accent-color:#D4537E;}
 .track-item:hover{background:#f0f0f0;}
 .track-item.active{background:#E1F5EE;border-color:#5DCAA5;color:#0F6E56;}
 .track-item.loading{opacity:.6;pointer-events:none;}
+.track-item.compat-poor{opacity:.45;}
+.rec-badge{font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px;background:#E1F5EE;color:#0F6E56;border:1px solid #5DCAA5;white-space:nowrap;margin-left:auto;flex-shrink:0;}
 @keyframes spin{to{transform:rotate(360deg);}}
 .spin{display:inline-block;animation:spin .8s linear infinite;}
 .toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(20px);background:white;border:1px solid #eee;border-radius:12px;padding:12px 24px;font-size:14px;color:#333;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,0.08);}
@@ -626,21 +628,49 @@ async function selectTrack(trackId){
   }
 }
 
+// Returns best playback rate for a given track BPM against the detected heart BPM.
+function calcRateForTrackBpm(trackBpm){
+  const heartBPM = (cs==='uploaded' && detectedBPM > 0) ? detectedBPM : 0;
+  if(!heartBPM || !trackBpm) return 1;
+  let bestRate = 1, bestDiff = Infinity;
+  for(let mult = 1; mult <= 4; mult++){
+    const rate = (heartBPM * mult) / trackBpm;
+    if(rate < 0.4 || rate > 2.5) continue;
+    const diff = Math.abs(rate - 1.0) * (rate > 1.0 ? 1.15 : 1.0);
+    if(diff < bestDiff){ bestDiff = diff; bestRate = rate; }
+  }
+  return bestRate;
+}
+// Returns 'best' | 'good' | 'poor' based on how close rate is to 1.0.
+function trackCompatLevel(trackBpm){
+  if(!trackBpm || !(cs==='uploaded' && detectedBPM > 0)) return 'good';
+  const rate = calcRateForTrackBpm(trackBpm);
+  const dev  = Math.abs(rate - 1.0);
+  if(dev <= 0.10) return 'best';
+  if(dev <= 0.25) return 'good';
+  return 'poor';
+}
+
 function renderTrackPanel(type){
   const panel=document.getElementById('trackPanel');
   const tracks=MUSIC_LIBRARY[type];
   if(!tracks||tracks.length===0){panel.style.display='none';return;}
-  panel.innerHTML=tracks.map(t=>`
+  panel.innerHTML=tracks.map(t=>{
+    const level = trackCompatLevel(t.bpm);
+    const badge = level==='best' ? '<span class="rec-badge">★ おすすめ</span>' : '';
+    const poorClass = level==='poor' ? ' compat-poor' : '';
+    return `
     <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
       <button class="track-prev-btn" id="prev_${t.id}" onclick="toggleMusicPreview('${t.id}',event)"
         style="width:30px;height:30px;border-radius:50%;border:1px solid #eee;background:#f9f9f9;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
         <i class="ti ti-player-play" style="font-size:13px;color:#888;"></i>
       </button>
-      <button class="track-item${selectedTrack&&selectedTrack.id===t.id?' active':''}" id="ti_${t.id}"
+      <button class="track-item${selectedTrack&&selectedTrack.id===t.id?' active':''}${poorClass}" id="ti_${t.id}"
         onclick="selectTrack('${t.id}')" style="flex:1;margin-bottom:0;">
-        ${t.title}
+        ${t.title}${badge}
       </button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
   panel.style.display='block';
 }
 
@@ -1330,6 +1360,7 @@ function runDetect(){
   document.getElementById('debugInfo').textContent =
     `A:${bpmA}(conf=${confA.toFixed(2)}) B:${bpmB}(r=${bestR.toFixed(2)}) D:${bpmDirect} LD:${ldScoreLow.toFixed(3)}vs${ldScoreHigh.toFixed(3)} →${detectedBPM}bpm | active=${(silenceEndFrame*frameSec).toFixed(2)}s–${(activeEndFrame*frameSec).toFixed(2)}s | votes=${totalVotes} | loopStart=${loopStart.toFixed(2)}s score=${bestScore.toFixed(4)}`;
   updateMusicBpmLabel();
+  if(cm) renderTrackPanel(cm); // refresh compatibility badges after BPM detection
   toast(ts('loaded'));
 }
 
@@ -1562,6 +1593,7 @@ function adjustDetectedBPM(delta){
   document.getElementById('debugInfo').textContent=
     'manual adjust → detectedBPM='+detectedBPM+' | rate='+calcPlaybackRate();
   updateMusicBpmLabel();
+  if(cm) renderTrackPanel(cm); // refresh compatibility badges
   const info=`${detectedBPM} bpm · ${loopStart.toFixed(2)}s – ${(loopStart+loopDur).toFixed(2)}s`;
   document.getElementById('detectInfo').textContent='✓ '+info;
   if(playing){stopAll();startAll();}
