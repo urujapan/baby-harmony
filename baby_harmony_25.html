@@ -1113,7 +1113,14 @@ function runDetect(){
   {
     const dRatio      = bpmDirect / Math.max(bpmFinal, 1);
     const nsdfInRange = bpmB >= 50 && bpmB <= 200;
-    const nsdfDoubles = confB > 0.3 && nsdfInRange && (bpmB / Math.max(bpmFinal, 1)) >= 1.6;
+    // nsdfDoubles: NSDF sees ~2×bpmFinal, suggesting bpmFinal is the true period.
+    // BUT if bpmDirect also agrees with bpmB (both pointing to the higher BPM),
+    // that means TWO independent estimators confirm the doubled value → override
+    // nsdfDoubles and let the correction fire.
+    const bpmBandDAgree = bpmDirect > 0 &&
+                          Math.abs(bpmB - bpmDirect) / Math.max(bpmDirect, 1) < 0.20;
+    const nsdfDoubles = confB > 0.3 && nsdfInRange &&
+                        (bpmB / Math.max(bpmFinal, 1)) >= 1.6 && !bpmBandDAgree;
 
     if(dRatio >= 1.7 && dRatio <= 2.4 && !nsdfDoubles &&
        bpmDirect >= 80 && bpmDirect <= 200){
