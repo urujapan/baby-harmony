@@ -124,11 +124,10 @@ input[type=range]{flex:1;accent-color:#D4537E;}
 .sig-bars span:nth-child(1){height:5px;}
 .sig-bars span:nth-child(2){height:9px;}
 .sig-bars span:nth-child(3){height:14px;}
+.sig-bars span{background:#e0e0e0;}
 .sig-bars.lv3 span{background:#5DCAA5;}
 .sig-bars.lv2 span:nth-child(1),.sig-bars.lv2 span:nth-child(2){background:#F5A623;}
-.sig-bars.lv2 span:nth-child(3){background:#ddd;}
-.sig-bars.lv1 span:nth-child(1){background:#ccc;}
-.sig-bars.lv1 span:nth-child(2),.sig-bars.lv1 span:nth-child(3){background:#ddd;}
+.sig-bars.lv1 span:nth-child(1){background:#bbb;}
 @keyframes spin{to{transform:rotate(360deg);}}
 .spin{display:inline-block;animation:spin .8s linear infinite;}
 .toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(20px);background:white;border:1px solid #eee;border-radius:12px;padding:12px 24px;font-size:14px;color:#333;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,0.08);}
@@ -2055,12 +2054,16 @@ function dlAudio(){
       o.start(tt); o.stop(tt+nd);
     }
   }
+  const defaultName=(document.getElementById('gMsg').value.trim()||'baby_harmony')+'_harmony';
+  const userInput=window.prompt('ファイル名を入力してください（.wav）',defaultName);
+  if(userInput===null) return; // cancelled
+  const filename=(userInput.trim()||defaultName)+'.wav';
   toast(ts('gen'));
   off.startRendering().then(buf=>{
     const wav=toWav(buf);
     const a=document.createElement('a');
     a.href=URL.createObjectURL(new Blob([wav],{type:'audio/wav'}));
-    a.download=(document.getElementById('gMsg').value.trim()||'baby_harmony')+'_harmony.wav';
+    a.download=filename;
     a.click(); toast(ts('dlA'));
   }).catch(e=>toast('Error: '+e));
 }
