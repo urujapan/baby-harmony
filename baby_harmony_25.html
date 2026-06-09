@@ -2016,40 +2016,57 @@ function seekMusic(e){
 function dlAudio(){
   if(!AC){toast('Please press play first.');return;}
   const sr=AC.sampleRate;
-  const dur=30;
-  const off=new OfflineAudioContext(2,sr*dur,sr);
-  const wg=off.createGain(); wg.gain.value=parseInt(document.getElementById('vW').value)/100;
-  const mg=off.createGain(); mg.gain.value=parseInt(document.getElementById('vM').value)/100;
-  wg.connect(off.destination); mg.connect(off.destination);
+
+  // Match preview timing: heartbeat fades in, music enters after intro
+  const bpm = (cs==='uploaded'&&detectedBPM>0) ? getEffectiveBPM()
+              : parseInt(document.getElementById('vT').value);
+  const beatSec  = 60 / bpm;
+  const barSec   = beatSec * 4;
+  const fadeInSec = FADEIN_BARS * barSec;                              // womb fade-in
+  const introSec  = INTRO_BARS  * barSec + musicStartOffsetBeats * beatSec; // music entry
+  const contentSec = 32;                                               // music content after intro
+  const dur = introSec + contentSec;
+
+  const off=new OfflineAudioContext(2, Math.ceil(sr*dur), sr);
+
+  const targetW = parseInt(document.getElementById('vW').value)/100;
+  const targetM = parseInt(document.getElementById('vM').value)/100;
+
+  // ── Womb sound: starts at 0, fades in over fadeInSec ─────────────────
+  const wg=off.createGain();
+  wg.gain.setValueAtTime(0, 0);
+  wg.gain.linearRampToValueAtTime(targetW, fadeInSec);
+  wg.connect(off.destination);
 
   if(cs==='uploaded'&&(loopBuffer||rawBuffer)){
     const buf=loopBuffer||rawBuffer;
     const s=off.createBufferSource(); s.buffer=buf; s.loop=true;
     s.connect(wg); s.start(0);
   } else {
-    const wb=off.createBuffer(1,sr*dur,sr);
+    const wb=off.createBuffer(1,Math.ceil(sr*dur),sr);
     const wd=wb.getChannelData(0);
-    const bpm=parseInt(document.getElementById('vT').value);
     const bl=Math.floor(sr*60/bpm);
     for(let i=0;i<wd.length;i++){const p=i%bl,e=p<bl*0.3?Math.exp(-p/(bl*0.05)):0;wd[i]=Math.sin(2*Math.PI*60*i/sr)*e*0.6+(Math.random()*2-1)*0.05;}
     const ws=off.createBufferSource(); ws.buffer=wb; ws.connect(wg); ws.start(0);
   }
 
+  // ── Music: enters after intro, same phase offset as preview ──────────
+  const mg=off.createGain(); mg.gain.value=targetM; mg.connect(off.destination);
+
   if(musicFileBuffer){
     const ms=off.createBufferSource(); ms.buffer=musicFileBuffer; ms.loop=true;
     ms.playbackRate.value=calcPlaybackRate();
     ms.connect(mg);
-    ms.start(0, calcPhaseOffsetSec()); // apply same phase offset as preview
+    ms.start(introSec, calcPhaseOffsetSec());
   } else if(cm!=='none'){
     const fm={lullaby:[261.6,329.6,392,523.3],nature:[174.6,220,261.6,349.2],piano:[293.7,370,440,587.3],classical:[261.6,311.1,392,466.2],ambient:[130.8,164.8,196,261.6]};
     const notes=fm[cm]||fm.lullaby;
-    const bpm=getMusicBPM();
     const nd=60/bpm*2;
-    for(let i=0;i*nd<dur;i++){
+    for(let i=0;i*nd<contentSec;i++){
       const o=off.createOscillator(),e=off.createGain();
       o.type='sine'; o.frequency.value=notes[i%notes.length];
       o.connect(e); e.connect(mg);
-      const tt=i*nd;
+      const tt=introSec+i*nd;
       e.gain.setValueAtTime(0,tt); e.gain.linearRampToValueAtTime(0.15,tt+0.3); e.gain.exponentialRampToValueAtTime(0.001,tt+nd-0.1);
       o.start(tt); o.stop(tt+nd);
     }
