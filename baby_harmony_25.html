@@ -1113,27 +1113,36 @@ function runDetect(){
   {
     const dRatio      = bpmDirect / Math.max(bpmFinal, 1);
     const nsdfInRange = bpmB >= 50 && bpmB <= 200;
-    // nsdfDoubles: NSDF sees ~2×bpmFinal, suggesting bpmFinal is the true period.
-    // BUT if bpmDirect also agrees with bpmB (both pointing to the higher BPM),
-    // that means TWO independent estimators confirm the doubled value → override
-    // nsdfDoubles and let the correction fire.
-    const bpmBandDAgree = bpmDirect > 0 &&
+    // bpmBandDAgree: NSDF (B) and direct histogram (D) both point to ~2×bpmFinal.
+    // Two independent estimators agreeing → strong evidence the higher BPM is correct.
+    // In this case skip Lub-Dub verification and apply correction directly.
+    const bpmBandDAgree = bpmDirect > 0 && nsdfInRange &&
+                          confB > 0.3 &&
+                          (bpmB  / Math.max(bpmFinal,   1)) >= 1.6 &&
+                          (dRatio >= 1.7 && dRatio <= 2.4) &&
                           Math.abs(bpmB - bpmDirect) / Math.max(bpmDirect, 1) < 0.20;
+    // nsdfDoubles: NSDF sees ~2×bpmFinal AND direct histogram does NOT agree
+    // → NSDF is likely detecting the first harmonic of bpmFinal, not the true BPM.
     const nsdfDoubles = confB > 0.3 && nsdfInRange &&
                         (bpmB / Math.max(bpmFinal, 1)) >= 1.6 && !bpmBandDAgree;
 
-    if(dRatio >= 1.7 && dRatio <= 2.4 && !nsdfDoubles &&
-       bpmDirect >= 80 && bpmDirect <= 200){
-      const periodLow  = Math.round(60 / bpmFinal  / frameSec);
-      const periodHigh = Math.round(60 / bpmDirect / frameSec);
-      ldScoreLow  = lubDubPatternScore(periodLow);
-      ldScoreHigh = lubDubPatternScore(periodHigh);
-      // Require ldScoreHigh to exceed a minimum absolute threshold.
-      // Prevents correction when both scores are near-zero (e.g. irregular
-      // recordings like Twinkle where neither period has clear lub-dub structure).
-      const minLDScore = 0.0008;
-      if(ldScoreHigh > ldScoreLow * 1.20 && ldScoreHigh >= minLDScore){
-        bpmFinal = bpmDirect; // lub-dub pattern fits better at the higher BPM
+    if(dRatio >= 1.7 && dRatio <= 2.4 && bpmDirect >= 80 && bpmDirect <= 200){
+      if(bpmBandDAgree){
+        // Fast path: two estimators agree → trust bpmDirect directly
+        bpmFinal = bpmDirect;
+      } else if(!nsdfDoubles){
+        // Slow path: use Lub-Dub pattern verification
+        const periodLow  = Math.round(60 / bpmFinal  / frameSec);
+        const periodHigh = Math.round(60 / bpmDirect / frameSec);
+        ldScoreLow  = lubDubPatternScore(periodLow);
+        ldScoreHigh = lubDubPatternScore(periodHigh);
+        // Require ldScoreHigh to exceed a minimum absolute threshold.
+        // Prevents correction when both scores are near-zero (e.g. irregular
+        // recordings like Twinkle where neither period has clear lub-dub structure).
+        const minLDScore = 0.0008;
+        if(ldScoreHigh > ldScoreLow * 1.20 && ldScoreHigh >= minLDScore){
+          bpmFinal = bpmDirect; // lub-dub pattern fits better at the higher BPM
+        }
       }
     }
   }
