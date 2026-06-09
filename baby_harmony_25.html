@@ -147,9 +147,9 @@ input[type=range]{flex:1;accent-color:#D4537E;}
       <button class="tab" id="T4" onclick="setTab('u',this)">Upload Heart Beat</button>
     </div>
     <div id="sampleGrid" class="sgrid">
-      <button class="sbtn hb-sample-btn active" onclick="pickHeartbeatSample(this,'HeartBeat Sample1_BPM138.mp3')"><i class="ti ti-heart-filled"></i> Sample 1<div class="ssub">Real · 138 bpm</div><span class="hb-prev-btn" onclick="event.stopPropagation();toggleSamplePreview(this,'HeartBeat Sample1_BPM138.mp3')" title="試聴"><i class="ti ti-player-play"></i></span></button>
-      <button class="sbtn hb-sample-btn" onclick="pickHeartbeatSample(this,'HeartBeat Sample2_BPM175.mp3')"><i class="ti ti-heart-filled"></i> Sample 2<div class="ssub">Real · 175 bpm</div><span class="hb-prev-btn" onclick="event.stopPropagation();toggleSamplePreview(this,'HeartBeat Sample2_BPM175.mp3')" title="試聴"><i class="ti ti-player-play"></i></span></button>
-      <button class="sbtn hb-sample-btn" onclick="pickHeartbeatSample(this,'HeartBeat Sample3_BPM150.mp3')"><i class="ti ti-heart-filled"></i> Sample 3<div class="ssub">Real · 150 bpm</div><span class="hb-prev-btn" onclick="event.stopPropagation();toggleSamplePreview(this,'HeartBeat Sample3_BPM150.mp3')" title="試聴"><i class="ti ti-player-play"></i></span></button>
+      <button class="sbtn hb-sample-btn active" onclick="pickHeartbeatSample(this,'HeartBeat Sample1_BPM138.mp3',138)"><i class="ti ti-heart-filled"></i> Sample 1<div class="ssub">Real · 138 bpm</div><span class="hb-prev-btn" onclick="event.stopPropagation();toggleSamplePreview(this,'HeartBeat Sample1_BPM138.mp3')" title="試聴"><i class="ti ti-player-play"></i></span></button>
+      <button class="sbtn hb-sample-btn" onclick="pickHeartbeatSample(this,'HeartBeat Sample2_BPM175.mp3',175)"><i class="ti ti-heart-filled"></i> Sample 2<div class="ssub">Real · 175 bpm</div><span class="hb-prev-btn" onclick="event.stopPropagation();toggleSamplePreview(this,'HeartBeat Sample2_BPM175.mp3')" title="試聴"><i class="ti ti-player-play"></i></span></button>
+      <button class="sbtn hb-sample-btn" onclick="pickHeartbeatSample(this,'HeartBeat Sample3_BPM150.mp3',150)"><i class="ti ti-heart-filled"></i> Sample 3<div class="ssub">Real · 150 bpm</div><span class="hb-prev-btn" onclick="event.stopPropagation();toggleSamplePreview(this,'HeartBeat Sample3_BPM150.mp3')" title="試聴"><i class="ti ti-player-play"></i></span></button>
     </div>
     <div id="uploadZone" class="upzone" style="display:none" onclick="document.getElementById('fi').click()">
       <p><i class="ti ti-upload" style="font-size:22px;display:block;margin-bottom:6px;color:#D4537E;"></i>
@@ -429,7 +429,7 @@ async function toggleSamplePreview(btn, filename){
   }
 }
 
-async function pickHeartbeatSample(btn, filename){
+async function pickHeartbeatSample(btn, filename, knownBpm=0){
   document.querySelectorAll('.sbtn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   btn.disabled = true;
@@ -449,6 +449,12 @@ async function pickHeartbeatSample(btn, filename){
     drawWaveform(buf);
     initGridDrag();
     runDetect();
+    // If a known BPM was provided and auto-detection is significantly off,
+    // force the correct value and rebuild the loop buffer.
+    if(knownBpm > 0 && Math.abs(detectedBPM - knownBpm) / knownBpm > 0.10){
+      const delta = knownBpm - detectedBPM;
+      adjustDetectedBPM(delta);
+    }
     document.getElementById('tempoRow').style.display = 'none';
     document.getElementById('musicBpmRow').style.display = 'flex';
     updateMusicBpmLabel();
