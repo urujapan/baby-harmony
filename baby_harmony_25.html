@@ -2552,13 +2552,17 @@ function doGift(){
     const from_=document.getElementById('gFrom').value.trim();
     const baseName=baby?'BabyHarmony_'+baby.replace(/\s+/g,'_'):'BabyHarmony';
     _giftWavBlob=new File([wav],baseName+'.wav',{type:'audio/wav'});
-    // Embed audio as base64 (16kHz 20s ≈ 850KB — safely under iOS 2MB data URI limit)
-    const b64=bufToBase64(wav);
     try{
-      document.getElementById('uploadStatus').textContent='⏳ ギフトを準備中...';
-      const html=buildGiftPageHTML(b64,baby,msg,from_);
-      _giftHtmlBlob=new File([html],baseName+'.html',{type:'text/html'});
-      const giftPageUrl = await uploadToCloudinary(_giftHtmlBlob, baseName+'.html');
+      document.getElementById('uploadStatus').textContent='⏳ 音声をアップロード中...';
+      // Upload WAV to Cloudinary, then build gift page URL on GitHub Pages
+      const wavUrl = await uploadToCloudinary(_giftWavBlob, baseName+'.wav');
+      const giftBase = 'https://urujapan.github.io/baby-harmony/gift.html';
+      const params = new URLSearchParams();
+      params.set('audio', wavUrl);
+      if(baby)  params.set('baby',  baby);
+      if(msg)   params.set('msg',   msg);
+      if(from_) params.set('from',  from_);
+      const giftPageUrl = giftBase + '?' + params.toString();
       _audioUrl = giftPageUrl; // primary share URL = the gift page
       // Show gift link
       document.getElementById('audioLink').textContent=giftPageUrl;
