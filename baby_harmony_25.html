@@ -136,15 +136,10 @@ input[type=range]{flex:1;accent-color:#D4537E;}
 .track-item.active{background:#E1F5EE;border-color:#5DCAA5;color:#0F6E56;}
 .track-item.loading{opacity:.6;pointer-events:none;}
 .track-item.compat-poor{opacity:.45;}
-.sig-bars{display:inline-flex;align-items:flex-end;gap:2px;margin-left:auto;flex-shrink:0;height:14px;}
-.sig-bars span{display:inline-block;width:4px;border-radius:1px;}
-.sig-bars span:nth-child(1){height:5px;}
-.sig-bars span:nth-child(2){height:9px;}
-.sig-bars span:nth-child(3){height:14px;}
-.sig-bars span{background:#e0e0e0;}
-.sig-bars.lv3 span{background:#5DCAA5;}
-.sig-bars.lv2 span:nth-child(1),.sig-bars.lv2 span:nth-child(2){background:#F5A623;}
-.sig-bars.lv1 span:nth-child(1){background:#bbb;}
+.compat-badge{margin-left:auto;flex-shrink:0;font-size:12px;display:flex;align-items:center;gap:3px;white-space:nowrap;}
+.compat-badge.lv3{color:#0F6E56;font-weight:600;}
+.compat-badge.lv2{color:#F5A623;}
+.compat-badge.lv1{color:#bbb;}
 @keyframes spin{to{transform:rotate(360deg);}}
 .spin{display:inline-block;animation:spin .8s linear infinite;}
 
@@ -296,8 +291,8 @@ input[type=range]{flex:1;accent-color:#D4537E;}
       <i class="ti ti-music" style="color:#0F6E56;"></i><span id="musicUpName">—</span>
     </div>
     <div class="divider"></div>
-    <div class="srow"><span class="slbl" id="T15">Womb sound</span><input type="range" id="vW" min="0" max="150" value="75" step="1" oninput="onSlider('vW','vWv','%')"><span class="sval" id="vWv">75%</span></div>
-    <div class="srow"><span class="slbl" id="T16">Music</span><input type="range" id="vM" min="0" max="150" value="75" step="1" oninput="onSlider('vM','vMv','%')"><span class="sval" id="vMv">75%</span></div>
+    <div class="srow"><span class="slbl" id="T15">Womb sound</span><input type="range" id="vW" min="-50" max="50" value="0" step="1" oninput="onVolSlider('vW','vWv')"><span class="sval" id="vWv">0</span></div>
+    <div class="srow"><span class="slbl" id="T16">Music</span><input type="range" id="vM" min="-50" max="50" value="0" step="1" oninput="onVolSlider('vM','vMv')"><span class="sval" id="vMv">0</span></div>
     <div class="srow" id="tempoRow" style="display:none"><span class="slbl" id="T17">Tempo</span><input type="range" id="vT" min="60" max="140" value="80" step="1" oninput="onSlider('vT','vTv',' bpm')"><span class="sval" id="vTv">80 bpm</span></div>
     <div class="srow" id="musicBpmRow">
       <span class="slbl" id="T17b">Music BPM</span>
@@ -307,16 +302,6 @@ input[type=range]{flex:1;accent-color:#D4537E;}
       <span class="slbl">Fine-tune</span>
       <input type="range" id="musicFine" min="-20" max="20" value="0" step="1" oninput="onMusicFine(this.value)">
       <span class="sval" id="musicFineVal">±0 bpm</span>
-    </div>
-    <div class="srow">
-      <span class="slbl">Music offset</span>
-      <div class="offset-btns">
-        <button class="obtn" onclick="adjustMusicOffset(-0.5)">−½</button>
-        <button class="obtn" onclick="adjustMusicOffset(-0.25)">−¼</button>
-        <span id="musicOffsetVal" style="font-size:12px;color:#D4537E;min-width:48px;text-align:center;">0</span>
-        <button class="obtn" onclick="adjustMusicOffset(0.25)">+¼</button>
-        <button class="obtn" onclick="adjustMusicOffset(0.5)">+½</button>
-      </div>
     </div>
 
   </div>
@@ -665,10 +650,16 @@ function pickMusic(btn,type){
     if(playing){stopAll();startAll();}
   }
 }
+function volToGain(v){ return (parseInt(v)+75)/100; } // 0→0.75, +50→1.25, -50→0.25
+function fmtVol(v){ const n=parseInt(v); return n>0?'+'+n:String(n); }
+function onVolSlider(id,outId){
+  const v=document.getElementById(id).value;
+  document.getElementById(outId).textContent=fmtVol(v);
+  if(id==='vW'&&wGain) wGain.gain.value=volToGain(v);
+  if(id==='vM'&&mGain) mGain.gain.value=volToGain(v);
+}
 function onSlider(id,outId,sfx){
   document.getElementById(outId).textContent=document.getElementById(id).value+sfx;
-  if(id==='vW'&&wGain) wGain.gain.value=parseInt(document.getElementById(id).value)/100;
-  if(id==='vM'&&mGain) mGain.gain.value=parseInt(document.getElementById(id).value)/100;
 }
 
 // ── File upload & analysis ────────────────────────────────────────────────
@@ -834,8 +825,9 @@ function renderTrackPanel(type){
   panel.innerHTML=tracks.map(t=>{
     const level = trackCompatLevel(t.bpm);
     const lvClass = level==='best'?'lv3':level==='good'?'lv2':'lv1';
+    const badgeContent = level==='best' ? '👌 Best Match!!!' : level==='good' ? '👍' : '🤔';
     const badge = (cs==='uploaded'&&detectedBPM>0)
-      ? `<span class="sig-bars ${lvClass}"><span></span><span></span><span></span></span>` : '';
+      ? `<span class="compat-badge ${lvClass}">${badgeContent}</span>` : '';
     const poorClass = level==='poor' ? ' compat-poor' : '';
     return `
     <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
@@ -1835,7 +1827,7 @@ function applyPhaseRestart(){
   const newGain = ctx.createGain();
   newGain.gain.setValueAtTime(0, now);
   newGain.gain.linearRampToValueAtTime(
-    parseInt(document.getElementById('vM').value) / 100,
+    volToGain(document.getElementById('vM').value),
     now + FADE
   );
   newGain.connect(ctx.destination);
@@ -2086,7 +2078,7 @@ function startAll(){
   const barSec=beatSec*4;          // 1小節 = 4拍
   const introSec=INTRO_BARS*barSec+musicStartOffsetBeats*beatSec; // +offset
   const fadeInSec=FADEIN_BARS*barSec; // 4小節
-  const targetW=parseInt(document.getElementById('vW').value)/100;
+  const targetW=volToGain(document.getElementById('vW').value);
 
   wGain=ctx.createGain();
   wGain.gain.setValueAtTime(0,ctx.currentTime);
@@ -2099,7 +2091,7 @@ function startAll(){
     progMusicDur = musicFileBuffer
       ? musicFileBuffer.duration / Math.max(0.1, calcPlaybackRate())
       : 0;
-    mGain=ctx.createGain(); mGain.gain.value=parseInt(document.getElementById('vM').value)/100;
+    mGain=ctx.createGain(); mGain.gain.value=volToGain(document.getElementById('vM').value);
     mSrc=buildMusicSrc(ctx,musicStartAt);
     if(mSrc){mSrc.connect(mGain); mGain.connect(ctx.destination);}
   }
@@ -2197,8 +2189,8 @@ function dlAudio(){
 
   const off=new OfflineAudioContext(2, Math.ceil(sr*dur), sr);
 
-  const targetW = parseInt(document.getElementById('vW').value)/100;
-  const targetM = parseInt(document.getElementById('vM').value)/100;
+  const targetW = volToGain(document.getElementById('vW').value);
+  const targetM = volToGain(document.getElementById('vM').value);
 
   // ── Womb sound: starts at 0, fades in over fadeInSec ─────────────────
   const wg=off.createGain();
@@ -2514,8 +2506,8 @@ function doGift(){
   const introSec=INTRO_BARS*barSec+musicStartOffsetBeats*beatSec;
   const dur=Math.min(introSec+20, 24); // max 24s for gift page
   const off=new OfflineAudioContext(1,Math.ceil(sr*dur),sr);
-  const targetW=parseInt(document.getElementById('vW').value)/100;
-  const targetM=parseInt(document.getElementById('vM').value)/100;
+  const targetW=volToGain(document.getElementById('vW').value);
+  const targetM=volToGain(document.getElementById('vM').value);
 
   const wg=off.createGain();
   wg.gain.setValueAtTime(0,0);
