@@ -373,13 +373,13 @@ input[type=range]{flex:1;accent-color:#D4537E;}
       <div class="stitle" id="T23">Share</div>
       <!-- Audio link box -->
       <div class="audio-link-box" id="audioLinkBox" style="display:none;">
-        <div class="audio-link-label">🎵 音声リンク（タップして再生）</div>
+        <div class="audio-link-label">✨ ギフトリンク（タップして開く）</div>
         <div class="lrow">
           <div class="lbox" id="audioLink">—</div>
           <button class="cpbtn" onclick="copyAudioLink()"><i class="ti ti-copy"></i></button>
         </div>
       </div>
-      <div class="upload-status" id="uploadStatus">⏳ 音声をアップロード中...</div>
+      <div class="upload-status" id="uploadStatus">⏳ ギフトを準備中...</div>
       <!-- Share buttons -->
       <div class="gift-share-row" id="shareButtons" style="display:none;">
         <button class="gift-share-btn" onclick="shareVia('line')"><i class="ti ti-message-circle"></i> LINE</button>
@@ -2556,28 +2556,22 @@ function doGift(){
     const msg=document.getElementById('gMsg').value.trim();
     const from_=document.getElementById('gFrom').value.trim();
     const baseName=baby?'BabyHarmony_'+baby.replace(/\s+/g,'_'):'BabyHarmony';
-    // HTML gift page for AirDrop
+    // Build self-contained HTML gift page (animation + embedded audio)
     const b64=bufToBase64(wav);
     const html=buildGiftPageHTML(b64,baby,msg,from_);
     _giftHtmlBlob=new File([html],baseName+'.html',{type:'text/html'});
     _giftWavBlob=new File([wav],baseName+'.wav',{type:'audio/wav'});
-    // Upload audio + card image to Cloudinary in parallel
+    // Upload HTML gift page to Cloudinary (raw) → shareable link
     try{
-      const cardBlob = await generateCardImage();
-      const cardFile = new File([cardBlob], baseName+'.png', {type:'image/png'});
-      const [audioUrl, cardUrl] = await Promise.all([
-        uploadToCloudinary(_giftWavBlob, baseName+'.wav'),
-        uploadCardToCloudinary(cardFile, baseName+'.png')
-      ]);
-      _audioUrl = audioUrl;
-      _cardUrl  = cardUrl;
-      // Show audio link
-      document.getElementById('audioLink').textContent=_audioUrl;
+      const giftPageUrl = await uploadToCloudinary(_giftHtmlBlob, baseName+'.html');
+      _audioUrl = giftPageUrl; // primary share URL = the gift page
+      // Show gift link
+      document.getElementById('audioLink').textContent=giftPageUrl;
       document.getElementById('audioLinkBox').style.display='block';
       document.getElementById('shareButtons').style.display='grid';
       document.getElementById('uploadStatus').className='upload-status done';
-      // QR code of audio URL
-      document.getElementById('qrImg').src='https://api.qrserver.com/v1/create-qr-code/?size=140x140&data='+encodeURIComponent(_audioUrl);
+      // QR code
+      document.getElementById('qrImg').src='https://api.qrserver.com/v1/create-qr-code/?size=140x140&data='+encodeURIComponent(giftPageUrl);
       document.getElementById('qrWrap').style.display='block';
     }catch(e){
       document.getElementById('uploadStatus').textContent='⚠️ アップロード失敗。ネットワークを確認してください。';
@@ -2656,14 +2650,13 @@ async function uploadCardToCloudinary(pngFile, filename){
   return data.secure_url || '';
 }
 
-function buildShareText(audioUrl, cardUrl){
+function buildShareText(giftUrl){
   const msg  = document.getElementById('gMsg').value.trim();
   const from = document.getElementById('gFrom').value.trim();
   const date = fmtDate(document.getElementById('gDate').value);
   let text = '🎁 '+giftTitle();
-  if(msg)    text += '\n\n💬 '+msg;
-  if(cardUrl)text += '\n\n🖼 Card: '+cardUrl;
-  text += '\n\n🎵 Listen: '+audioUrl;
+  if(msg)  text += '\n\n💬 '+msg;
+  text += '\n\n✨ ギフトを開く → '+giftUrl;
   const fromDate=[from?'— '+from:'', date].filter(Boolean).join('　');
   if(fromDate) text += '\n\n'+fromDate;
   return text;
@@ -2671,7 +2664,7 @@ function buildShareText(audioUrl, cardUrl){
 
 function shareVia(platform){
   if(!_audioUrl){toast('Please tap "Complete Gift" first.');return;}
-  const text = buildShareText(_audioUrl, _cardUrl);
+  const text = buildShareText(_audioUrl);
   const enc  = encodeURIComponent(text);
   if(platform==='line')     window.open('https://line.me/R/msg/text/?'+enc,'_blank');
   else if(platform==='whatsapp') window.open('https://wa.me/?text='+enc,'_blank');
