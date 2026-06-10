@@ -377,10 +377,17 @@ input[type=range]{flex:1;accent-color:#D4537E;}
       <div class="divider"></div>
       <div class="gdet" id="pSound">Heartbeat × Lullaby</div>
       <div class="gdet" style="color:#D4537E;font-size:11px;margin-top:4px;">Womb sound × Music blend</div>
+      <div class="gdet" id="pFromDate" style="margin-top:6px;display:none;"></div>
     </div>
-    <div class="ginput-group" style="margin-top:.75rem;">
-      <label class="ginput-label" style="color:#bbb;">— From（任意）</label>
-      <input class="ginput" type="text" id="gFrom" placeholder="例：Mom &amp; Dad" oninput="refreshPreview()" style="border-color:#eee;color:#aaa;">
+    <div style="display:flex;gap:8px;margin-top:.75rem;">
+      <div class="ginput-group" style="flex:1;margin-bottom:0;">
+        <label class="ginput-label" style="color:#bbb;">— From（任意）</label>
+        <input class="ginput" type="text" id="gFrom" placeholder="例：Mom &amp; Dad" oninput="refreshPreview()" style="border-color:#eee;color:#aaa;">
+      </div>
+      <div class="ginput-group" style="flex:1;margin-bottom:0;">
+        <label class="ginput-label" style="color:#bbb;">📅 日付（任意）</label>
+        <input class="ginput" type="date" id="gDate" oninput="refreshPreview()" style="border-color:#eee;color:#aaa;">
+      </div>
     </div>
     <div class="divider"></div>
     <div class="arow">
@@ -447,23 +454,23 @@ const TX={ru:['<em>Гармония только для малыша и мамы
 const MN={en:{lullaby:'Lullaby',ambient:'Ambient',classical:'Classical',world:'World',electro:'Electro',none:'Other',file:'Uploaded Music'},ja:{lullaby:'子守唄',ambient:'アンビエント',classical:'クラシック',world:'ワールド',electro:'エレクトロ',none:'その他',file:'アップロード曲'},zh:{lullaby:'摇篮曲',ambient:'氛围音乐',classical:'古典乐',world:'世界音乐',electro:'电子乐',none:'其他',file:'上传音乐'},'zh-TW':{lullaby:'搖籃曲',ambient:'氛圍音樂',classical:'古典樂',world:'世界音樂',electro:'電子樂',none:'其他',file:'上傳音樂'},ko:{lullaby:'자장가',ambient:'앰비언트',classical:'클래식',world:'월드',electro:'일렉트로',none:'기타',file:'업로드 음악'},es:{lullaby:'Nana',ambient:'Ambiente',classical:'Clásica',world:'Mundial',electro:'Electro',none:'Otro',file:'Música subida'},fr:{lullaby:'Berceuse',ambient:'Ambiant',classical:'Classique',world:'Mondial',electro:'Électro',none:'Autre',file:'Musique importée'},de:{lullaby:'Schlaflied',ambient:'Ambient',classical:'Klassik',world:'Weltmusik',electro:'Elektro',none:'Sonstiges',file:'Hochgeladene Musik'},pt:{lullaby:'Canção de ninar',ambient:'Ambiente',classical:'Clássico',world:'Mundial',electro:'Eletro',none:'Outro',file:'Música enviada'},hi:{lullaby:'लोरी',ambient:'परिवेश',classical:'शास्त्रीय',world:'विश्व',electro:'इलेक्ट्रो',none:'अन्य',file:'अपलोड किया गया संगीत'},id:{lullaby:'Lagu Tidur',ambient:'Ambient',classical:'Klasik',world:'Dunia',electro:'Elektro',none:'Lainnya',file:'Musik Diunggah'},it:{lullaby:'Ninnananna',ambient:'Ambientale',classical:'Classica',world:'Mondiale',electro:'Elettro',none:'Altro',file:'Musica caricata'},th:{lullaby:'เพลงกล่อมเด็ก',ambient:'แอมเบียนท์',classical:'คลาสสิก',world:'ดนตรีโลก',electro:'อิเล็กโทร',none:'อื่นๆ',file:'เพลงที่อัปโหลด'},vi:{lullaby:'Nhạc ru',ambient:'Nhạc nền',classical:'Cổ điển',world:'Thế giới',electro:'Điện tử',none:'Khác',file:'Nhạc tải lên'},ru:{lullaby:'Колыбельная',ambient:'Эмбиент',classical:'Классика',world:'Мировая',electro:'Электро',none:'Другое',file:'Загруженная музыка'}};
 const TOAST={en:{loaded:'Analyzed! Adjust loop region if needed.',gen:'Generating...',dlA:'Audio downloaded!',dlC:'Card downloaded!',gift:'Gift ready!',msg:'Please enter a message.',copied:'Link copied!',fail:'Copy failed.',noBeats:'Could not detect rhythm. Try re-detect or adjust manually.'},ja:{loaded:'解析完了！ループ区間を確認してください。',gen:'生成中...',dlA:'音声をダウンロードしました',dlC:'カードをダウンロードしました',gift:'贈り物が完成しました！',msg:'メッセージを入力してください',copied:'リンクをコピーしました！',fail:'コピーできませんでした',noBeats:'リズムを検出できませんでした。再検出してみてください。'},zh:{loaded:'分析完成！请确认循环区间。',gen:'生成中...',dlA:'音频已下载',dlC:'贺卡已下载',gift:'礼物已完成！',msg:'请先输入留言',copied:'链接已复制！',fail:'复制失败',noBeats:'未能检测到节奏，请尝试重新检测。'},'zh-TW':{loaded:'分析完成！請確認循環區間。',gen:'生成中...',dlA:'音訊已下載',dlC:'賀卡已下載',gift:'禮物已完成！',msg:'請先輸入留言',copied:'連結已複製！',fail:'複製失敗',noBeats:'未能偵測到節奏，請嘗試重新偵測。'},ko:{loaded:'분석 완료! 루프 구간을 확인하세요.',gen:'생성 중...',dlA:'오디오 다운로드됨',dlC:'카드 다운로드됨',gift:'선물 완성!',msg:'메시지를 입력해주세요',copied:'링크 복사됨!',fail:'복사 실패',noBeats:'리듬을 감지하지 못했습니다. 다시 시도해보세요.'},es:{loaded:'¡Analizado! Ajusta la región si necesitas.',gen:'Generando...',dlA:'¡Descargado!',dlC:'¡Tarjeta descargada!',gift:'¡Regalo listo!',msg:'Escribe un mensaje.',copied:'¡Copiado!',fail:'Error.',noBeats:'No se detectó ritmo. Intenta de nuevo.'},fr:{loaded:'Analysé ! Ajustez la région si nécessaire.',gen:'Génération...',dlA:'Téléchargé !',dlC:'Carte téléchargée !',gift:'Cadeau prêt !',msg:'Entrez un message.',copied:'Lien copié !',fail:'Échec.',noBeats:'Rythme non détecté. Réessayez.'},de:{loaded:'Analysiert! Passe den Loop-Bereich an.',gen:'Wird erstellt...',dlA:'Audio heruntergeladen!',dlC:'Karte heruntergeladen!',gift:'Geschenk fertig!',msg:'Bitte Nachricht eingeben.',copied:'Link kopiert!',fail:'Kopieren fehlgeschlagen.',noBeats:'Rhythmus nicht erkannt. Erneut versuchen.'},pt:{loaded:'Analisado! Ajuste a região se necessário.',gen:'Gerando...',dlA:'Áudio baixado!',dlC:'Cartão baixado!',gift:'Presente pronto!',msg:'Por favor, insira uma mensagem.',copied:'Link copiado!',fail:'Falha ao copiar.',noBeats:'Não foi possível detectar o ritmo. Tente novamente.'},hi:{loaded:'विश्लेषण पूर्ण! लूप क्षेत्र समायोजित करें।',gen:'बनाया जा रहा है...',dlA:'ऑडियो डाउनलोड हो गया!',dlC:'कार्ड डाउनलोड हो गया!',gift:'तोहफा तैयार है!',msg:'कृपया संदेश दर्ज करें।',copied:'लिंक कॉपी हो गया!',fail:'कॉपी विफल।',noBeats:'लय का पता नहीं चला। पुनः प्रयास करें।'},id:{loaded:'Dianalisis! Sesuaikan region loop jika perlu.',gen:'Membuat...',dlA:'Audio diunduh!',dlC:'Kartu diunduh!',gift:'Hadiah siap!',msg:'Silakan masukkan pesan.',copied:'Tautan disalin!',fail:'Gagal menyalin.',noBeats:'Ritme tidak terdeteksi. Coba lagi.'},it:{loaded:'Analizzato! Regola la regione se necessario.',gen:'Creazione...',dlA:'Audio scaricato!',dlC:'Scheda scaricata!',gift:'Regalo pronto!',msg:'Per favore inserisci un messaggio.',copied:'Link copiato!',fail:'Copia fallita.',noBeats:'Ritmo non rilevato. Riprova.'},th:{loaded:'วิเคราะห์แล้ว! ปรับพื้นที่ลูปหากจำเป็น',gen:'กำลังสร้าง...',dlA:'ดาวน์โหลดเสียงแล้ว!',dlC:'ดาวน์โหลดการ์ดแล้ว!',gift:'ของขวัญพร้อมแล้ว!',msg:'กรุณากรอกข้อความ',copied:'คัดลอกลิงก์แล้ว!',fail:'คัดลอกล้มเหลว',noBeats:'ไม่พบจังหวะ ลองอีกครั้ง'},vi:{loaded:'Đã phân tích! Điều chỉnh vùng lặp nếu cần.',gen:'Đang tạo...',dlA:'Đã tải xuống âm thanh!',dlC:'Đã tải xuống thẻ!',gift:'Quà tặng đã sẵn sàng!',msg:'Vui lòng nhập tin nhắn.',copied:'Đã sao chép liên kết!',fail:'Sao chép thất bại.',noBeats:'Không thể phát hiện nhịp điệu. Thử lại.'},ru:{loaded:'Проанализировано! Настройте регион при необходимости.',gen:'Создание...',dlA:'Аудио скачано!',dlC:'Открытка скачана!',gift:'Подарок готов!',msg:'Пожалуйста, введите сообщение.',copied:'Ссылка скопирована!',fail:'Ошибка копирования.',noBeats:'Ритм не обнаружен. Попробуйте снова.'}};
 const LL={en:'English',ja:'日本語',zh:'中文','zh-TW':'繁體',ko:'한국어',es:'Español',fr:'Français',de:'Deutsch',pt:'Português',hi:'हिन्दी',id:'Indonesia',it:'Italiano',th:'ไทย',vi:'Tiếng Việt',ru:'Русский'};
-// Gift section labels: [baby_label, baby_ph, msg_label, msg_ph, from_label, from_ph]
+// Gift section labels: [baby_label, baby_ph, msg_label, msg_ph, from_label, from_ph, date_label]
 const GT={
-  en:['👶 Baby\'s Name','e.g. Emma','💬 Message','e.g. We love you so much ♡','— From (optional)','e.g. Mom & Dad'],
-  ja:['👶 赤ちゃんのお名前','例：さくら、Emma','💬 メッセージ','例：生まれてきてくれてありがとう ♡','— From（任意）','例：ママとパパより'],
-  zh:['👶 宝宝的名字','例：Emma','💬 留言','例：宝贝，我们爱你 ♡','— 来自（可选）','例：爸爸妈妈'],
-  'zh-TW':['👶 寶寶的名字','例：Emma','💬 留言','例：寶貝，我們愛你 ♡','— 來自（可選）','例：爸爸媽媽'],
-  ko:['👶 아기 이름','예: 민준, Emma','💬 메시지','예: 태어나줘서 고마워 ♡','— 보내는 사람 (선택)','예: 엄마 & 아빠'],
-  es:['👶 Nombre del bebé','ej. Emma','💬 Mensaje','ej. Te amamos tanto ♡','— De (opcional)','ej. Mamá y Papá'],
-  fr:['👶 Prénom du bébé','ex. Emma','💬 Message','ex. On t\'aime tellement ♡','— De (facultatif)','ex. Maman & Papa'],
-  de:['👶 Name des Babys','z.B. Emma','💬 Nachricht','z.B. Wir lieben dich so sehr ♡','— Von (optional)','z.B. Mama & Papa'],
-  pt:['👶 Nome do bebê','ex. Emma','💬 Mensagem','ex. Te amamos muito ♡','— De (opcional)','ex. Mamãe & Papai'],
-  hi:['👶 बच्चे का नाम','जैसे: Emma','💬 संदेश','जैसे: हम तुमसे बहुत प्यार करते हैं ♡','— से (वैकल्पिक)','जैसे: माँ और पापा'],
-  id:['👶 Nama Bayi','mis. Emma','💬 Pesan','mis. Kami sangat mencintaimu ♡','— Dari (opsional)','mis. Mama & Papa'],
-  it:['👶 Nome del bambino','es. Emma','💬 Messaggio','es. Ti vogliamo tanto bene ♡','— Da (facoltativo)','es. Mamma & Papà'],
-  th:['👶 ชื่อลูกน้อย','เช่น Emma','💬 ข้อความ','เช่น รักหนูมากเลยนะ ♡','— จาก (ไม่บังคับ)','เช่น แม่ & พ่อ'],
-  vi:['👶 Tên của bé','ví dụ: Emma','💬 Lời nhắn','ví dụ: Ba mẹ yêu con rất nhiều ♡','— Từ (tùy chọn)','ví dụ: Ba & Mẹ'],
-  ru:['👶 Имя малыша','напр. Маша','💬 Сообщение','напр. Мы так тебя любим ♡','— От (необязательно)','напр. Мама и Папа']
+  en:['👶 Baby\'s Name','e.g. Emma','💬 Message','e.g. We love you so much ♡','— From (optional)','e.g. Mom & Dad','📅 Date (optional)'],
+  ja:['👶 赤ちゃんのお名前','例：さくら、Emma','💬 メッセージ','例：生まれてきてくれてありがとう ♡','— From（任意）','例：ママとパパより','📅 日付（任意）'],
+  zh:['👶 宝宝的名字','例：Emma','💬 留言','例：宝贝，我们爱你 ♡','— 来自（可选）','例：爸爸妈妈','📅 日期（可选）'],
+  'zh-TW':['👶 寶寶的名字','例：Emma','💬 留言','例：寶貝，我們愛你 ♡','— 來自（可選）','例：爸爸媽媽','📅 日期（可選）'],
+  ko:['👶 아기 이름','예: 민준, Emma','💬 메시지','예: 태어나줘서 고마워 ♡','— 보내는 사람 (선택)','예: 엄마 & 아빠','📅 날짜 (선택)'],
+  es:['👶 Nombre del bebé','ej. Emma','💬 Mensaje','ej. Te amamos tanto ♡','— De (opcional)','ej. Mamá y Papá','📅 Fecha (opcional)'],
+  fr:['👶 Prénom du bébé','ex. Emma','💬 Message','ex. On t\'aime tellement ♡','— De (facultatif)','ex. Maman & Papa','📅 Date (facultatif)'],
+  de:['👶 Name des Babys','z.B. Emma','💬 Nachricht','z.B. Wir lieben dich so sehr ♡','— Von (optional)','z.B. Mama & Papa','📅 Datum (optional)'],
+  pt:['👶 Nome do bebê','ex. Emma','💬 Mensagem','ex. Te amamos muito ♡','— De (opcional)','ex. Mamãe & Papai','📅 Data (opcional)'],
+  hi:['👶 बच्चे का नाम','जैसे: Emma','💬 संदेश','जैसे: हम तुमसे बहुत प्यार करते हैं ♡','— से (वैकल्पिक)','जैसे: माँ और पापा','📅 तारीख (वैकल्पिक)'],
+  id:['👶 Nama Bayi','mis. Emma','💬 Pesan','mis. Kami sangat mencintaimu ♡','— Dari (opsional)','mis. Mama & Papa','📅 Tanggal (opsional)'],
+  it:['👶 Nome del bambino','es. Emma','💬 Messaggio','es. Ti vogliamo tanto bene ♡','— Da (facoltativo)','es. Mamma & Papà','📅 Data (facoltativo)'],
+  th:['👶 ชื่อลูกน้อย','เช่น Emma','💬 ข้อความ','เช่น รักหนูมากเลยนะ ♡','— จาก (ไม่บังคับ)','เช่น แม่ & พ่อ','📅 วันที่ (ไม่บังคับ)'],
+  vi:['👶 Tên của bé','ví dụ: Emma','💬 Lời nhắn','ví dụ: Ba mẹ yêu con rất nhiều ♡','— Từ (tùy chọn)','ví dụ: Ba & Mẹ','📅 Ngày (tùy chọn)'],
+  ru:['👶 Имя малыша','напр. Маша','💬 Сообщение','напр. Мы так тебя любим ♡','— От (необязательно)','напр. Мама и Папа','📅 Дата (необязательно)']
 };
 const READY={en:'Ready to play',ja:'再生する準備ができています',zh:'准备好播放','zh-TW':'準備好播放',ko:'재생 준비 완료',es:'Listo para reproducir',fr:'Prêt à jouer',de:'Bereit zum Abspielen',pt:'Pronto para reproduzir',hi:'बजाने के लिए तैयार',id:'Siap dimainkan',it:'Pronto per la riproduzione',th:'พร้อมเล่น',vi:'Sẵn sàng phát',ru:'Готово к воспроизведению'};
 const NOW={en:'Now playing...',ja:'再生中...',zh:'播放中...','zh-TW':'播放中...',ko:'재생 중...',es:'Reproduciendo...',fr:'Lecture en cours...',de:'Wird abgespielt...',pt:'Reproduzindo...',hi:'अभी बज रहा है...',id:'Sedang diputar...',it:'In riproduzione...',th:'กำลังเล่น...',vi:'Đang phát...',ru:'Воспроизведение...'};
@@ -505,6 +512,7 @@ function L(l){
   if(gLabels[0]) gLabels[0].textContent=gt[0];
   if(gLabels[1]) gLabels[1].textContent=gt[2];
   if(gLabels[2]) gLabels[2].textContent=gt[4];
+  if(gLabels[3]) gLabels[3].textContent=gt[6]||'📅';
   document.getElementById('gBaby').placeholder=gt[1];
   document.getElementById('gMsg').placeholder=gt[3];
   document.getElementById('gFrom').placeholder=gt[5];
@@ -522,6 +530,11 @@ function giftFilename(){
   const base=baby ? 'Baby_Harmony_for_'+baby.replace(/\s+/g,'_') : 'Baby_Harmony';
   return base+'.wav';
 }
+function fmtDate(val){
+  if(!val) return '';
+  const [y,m,d]=val.split('-');
+  return y+'.'+m+'.'+d;
+}
 function refreshPreview(){
   document.getElementById('pTitle').textContent=giftTitle();
   const msg=document.getElementById('gMsg').value.trim();
@@ -529,6 +542,13 @@ function refreshPreview(){
   pMsg.textContent=msg;
   pMsg.style.display=msg?'block':'none';
   document.getElementById('pSound').textContent=sName()+' × '+musicDisplayName();
+  // From + Date line
+  const from=document.getElementById('gFrom').value.trim();
+  const date=fmtDate(document.getElementById('gDate').value);
+  const fd=document.getElementById('pFromDate');
+  const fdText=[from?'— '+from:'', date].filter(Boolean).join('　');
+  fd.textContent=fdText;
+  fd.style.display=fdText?'block':'none';
 }
 
 function setTab(tab,btn){
@@ -2278,7 +2298,8 @@ function generateCardImage(){
   const baby  = document.getElementById('gBaby').value.trim();
   const msg   = document.getElementById('gMsg').value.trim() || '...';
   const from_ = document.getElementById('gFrom').value.trim();
-  const sound = sName()+' × '+musicDisplayName();
+  const date_  = fmtDate(document.getElementById('gDate').value);
+  const sound  = sName()+' × '+musicDisplayName();
 
   const W=800, H=1000;
   const cv=document.createElement('canvas');
@@ -2349,11 +2370,12 @@ function generateCardImage(){
   c.fillStyle='#D4537E'; c.font='20px "DM Sans", sans-serif';
   c.fillText('Womb sound × Music blend', mid, y); y+=60;
 
-  // From
-  if(from_){
+  // From + Date
+  const fromDate=[from_?'— '+from_:'', date_].filter(Boolean).join('　');
+  if(fromDate){
     c.font='italic 26px Georgia, serif';
     c.fillStyle='#888';
-    c.fillText('— '+from_, mid, y); y+=50;
+    c.fillText(fromDate, mid, y); y+=50;
   }
 
   // Branding
@@ -2653,14 +2675,15 @@ async function uploadCardToCloudinary(pngFile, filename){
 }
 
 function buildShareText(audioUrl, cardUrl){
-  const baby = document.getElementById('gBaby').value.trim();
   const msg  = document.getElementById('gMsg').value.trim();
   const from = document.getElementById('gFrom').value.trim();
+  const date = fmtDate(document.getElementById('gDate').value);
   let text = '🎁 '+giftTitle();
   if(msg)    text += '\n\n💬 '+msg;
   if(cardUrl)text += '\n\n🖼 Card: '+cardUrl;
   text += '\n\n🎵 Listen: '+audioUrl;
-  if(from)   text += '\n\n— '+from;
+  const fromDate=[from?'— '+from:'', date].filter(Boolean).join('　');
+  if(fromDate) text += '\n\n'+fromDate;
   return text;
 }
 
