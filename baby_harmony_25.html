@@ -2579,7 +2579,7 @@ function doGift(){
     const baseName=baby?'BabyHarmony_'+baby.replace(/\s+/g,'_'):'BabyHarmony';
     _giftWavBlob=new File([wav],baseName+'.wav',{type:'audio/wav'});
     try{
-      document.getElementById('uploadStatus').textContent='⏳ 音声をアップロード中... ('+dur.toFixed(0)+'秒)';
+      document.getElementById('uploadStatus').textContent='⏳ ギフトを準備中...';
       // Upload WAV to Cloudinary, then build gift page URL on GitHub Pages
       const wavUrl = await uploadToCloudinary(_giftWavBlob, baseName+'.wav');
       const giftBase = 'https://urujapan.github.io/baby-harmony/gift.html';
@@ -2594,7 +2594,6 @@ function doGift(){
       document.getElementById('audioLink').textContent=giftPageUrl;
       document.getElementById('audioLinkBox').style.display='block';
       document.getElementById('shareButtons').style.display='grid';
-      document.getElementById('uploadStatus').textContent='✅ 完成！（'+dur.toFixed(0)+'秒）';
       document.getElementById('uploadStatus').className='upload-status done';
       // QR code
       document.getElementById('qrImg').src='https://api.qrserver.com/v1/create-qr-code/?size=140x140&data='+encodeURIComponent(giftPageUrl);
