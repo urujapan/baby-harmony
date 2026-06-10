@@ -2559,7 +2559,9 @@ function doGift(){
     _giftWavBlob=new File([wav],baseName+'.wav',{type:'audio/wav'});
     // Upload WAV first → get URL → embed URL in HTML (avoids 2MB base64 limit on iOS)
     try{
+      document.getElementById('uploadStatus').textContent='⏳ 音声をアップロード中... (1/2)';
       const wavUrl = await uploadToCloudinary(_giftWavBlob, baseName+'.wav');
+      document.getElementById('uploadStatus').textContent='⏳ ギフトページを作成中... (2/2)';
       const html=buildGiftPageHTML(wavUrl,baby,msg,from_);
       _giftHtmlBlob=new File([html],baseName+'.html',{type:'text/html'});
       const giftPageUrl = await uploadToCloudinary(_giftHtmlBlob, baseName+'.html');
@@ -2573,9 +2575,10 @@ function doGift(){
       document.getElementById('qrImg').src='https://api.qrserver.com/v1/create-qr-code/?size=140x140&data='+encodeURIComponent(giftPageUrl);
       document.getElementById('qrWrap').style.display='block';
     }catch(e){
-      document.getElementById('uploadStatus').textContent='⚠️ アップロード失敗。ネットワークを確認してください。';
+      console.error('Upload error:',e);
+      document.getElementById('uploadStatus').textContent='⚠️ '+e.message;
       document.getElementById('uploadStatus').className='upload-status error';
-      document.getElementById('shareButtons').style.display='grid';
+      document.getElementById('shareButtons').style.display='none';
     }
     _renderDone=true;
     _maybeReveal();
@@ -2622,17 +2625,17 @@ const CLD_PRESET = 'baby_harmony_gift';
 let _audioUrl = ''; // Cloudinary audio URL
 let _cardUrl  = ''; // Cloudinary card image URL
 
-async function uploadToCloudinary(wavBlob, filename){
+async function uploadToCloudinary(blob, filename){
   const fd = new FormData();
-  fd.append('file', wavBlob, filename);
+  fd.append('file', blob, filename);
   fd.append('upload_preset', CLD_PRESET);
   const res = await fetch(
     `https://api.cloudinary.com/v1_1/${CLD_CLOUD}/raw/upload`,
     {method:'POST', body:fd}
   );
-  if(!res.ok) throw new Error('Upload failed: '+res.status);
   const data = await res.json();
-  if(!data.secure_url) throw new Error(data.error?.message||'Upload error');
+  if(!res.ok) throw new Error((data.error?.message||'Upload failed')+' ['+res.status+'] file='+filename);
+  if(!data.secure_url) throw new Error((data.error?.message||'No URL returned')+' file='+filename);
   return data.secure_url;
 }
 
