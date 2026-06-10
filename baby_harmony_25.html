@@ -2301,7 +2301,7 @@ const au=document.getElementById('aud'),btn=document.getElementById('pbtn'),pf=d
 au.addEventListener('timeupdate',()=>{if(au.duration)pf.style.width=(au.currentTime/au.duration*100)+'%';});
 au.addEventListener('ended',()=>{btn.textContent='▶ Play';btn.classList.remove('playing');pf.style.width='0%';});
 function tog(){if(au.paused){au.play();btn.textContent='⏸ Pause';btn.classList.add('playing');}else{au.pause();btn.textContent='▶ Play';btn.classList.remove('playing');}}
-</script></body></html>`;
+${'</'}script></body></html>`;
 }
 
 function bufToBase64(buffer){
