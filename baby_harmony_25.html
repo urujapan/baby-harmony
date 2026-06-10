@@ -2371,49 +2371,46 @@ function generateCardImage(){
 }
 
 // ── Gift page HTML template ───────────────────────────────────────────────
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function buildGiftPageHTML(b64audio, baby, msg, from_){
-  const title = baby ? 'Baby Harmony for '+baby : 'Baby Harmony';
-  const readyMsg = baby ? 'Gift for '+baby+' is ready! 🎁' : 'Your gift is ready! 🎁';
-  const fromLine = from_ ? '<div class="from">— '+from_+'</div>' : '';
+  const title = baby ? 'Baby Harmony for '+esc(baby) : 'Baby Harmony';
+  const readyMsg = baby ? 'Gift for '+esc(baby)+' is ready! 🎁' : 'Your gift is ready! 🎁';
+  const fromLine = from_ ? '<div class="from">— '+esc(from_)+'</div>' : '';
+  const msgLine  = msg   ? '<div class="message">'+esc(msg)+'</div><div class="divider"></div>' : '';
   return `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${title}</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:Georgia,serif;background:linear-gradient(135deg,#fff5f8 0%,#f0f9f6 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;}
-/* Animation */
-.anim{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:10;transition:opacity .8s;}
-.anim.hide{opacity:0;pointer-events:none;}
+body{font-family:Georgia,serif;background:linear-gradient(135deg,#fff5f8 0%,#f0f9f6 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;}
+/* Intro animation overlay — pure CSS, no JS needed */
+.anim{position:fixed;inset:0;background:linear-gradient(135deg,#fff5f8,#f0f9f6);display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:10;animation:hideAnim .6s ease 3.4s forwards;}
+@keyframes hideAnim{to{opacity:0;visibility:hidden;pointer-events:none;}}
 .scene{position:relative;width:220px;height:220px;display:flex;align-items:center;justify-content:center;flex-direction:column;}
 .cradle{font-size:72px;transform-origin:center top;animation:rock 1.2s ease-in-out infinite;}
 @keyframes rock{0%{transform:rotate(-10deg)}50%{transform:rotate(10deg)}100%{transform:rotate(-10deg)}}
 .fl{position:absolute;font-size:22px;opacity:0;animation:floatUp 2s ease-in forwards;}
 @keyframes floatUp{0%{opacity:0;transform:translateY(0) scale(.7)}20%{opacity:1}80%{opacity:.8}100%{opacity:0;transform:translateY(-90px) scale(1.1)}}
 .env{font-size:44px;opacity:0;animation:flyAway 1.2s ease-in forwards;animation-delay:1.8s;}
-@keyframes flyAway{0%{opacity:0;transform:translate(0,0) scale(.8) rotate(0)}20%{opacity:1}100%{opacity:0;transform:translate(140px,-140px) scale(.4) rotate(20deg)}}
-.sp{position:absolute;font-size:14px;opacity:0;animation:sparkle 1s ease forwards;}
-@keyframes sparkle{0%{opacity:0;transform:scale(0)}50%{opacity:1;transform:scale(1.3)}100%{opacity:0;transform:scale(1)}}
-.ready{font-size:1.25rem;color:#D4537E;font-style:italic;opacity:0;animation:fadeIn .6s ease forwards;animation-delay:2.6s;text-align:center;margin-top:16px;padding:0 20px;}
-@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-/* Card */
-.card{display:none;max-width:360px;width:90%;background:white;border-radius:20px;padding:2.5rem 2rem;text-align:center;box-shadow:0 8px 40px rgba(212,83,126,.15);}
-.card.show{display:block;animation:cardIn .8s ease;}
-@keyframes cardIn{from{opacity:0;transform:translateY(30px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
-.heart-icon{font-size:2.5rem;color:#D4537E;margin-bottom:.8rem;}
+@keyframes flyAway{0%{opacity:0;transform:translate(0,0) scale(.8)}20%{opacity:1}100%{opacity:0;transform:translate(140px,-140px) scale(.4) rotate(20deg)}}
+.ready{font-size:1.2rem;color:#D4537E;font-style:italic;opacity:0;animation:fadeUp .6s ease forwards;animation-delay:2.6s;text-align:center;margin-top:16px;padding:0 20px;}
+/* Card — appears via CSS delay, no JS */
+.card{max-width:360px;width:90%;background:white;border-radius:20px;padding:2.5rem 2rem;text-align:center;box-shadow:0 8px 40px rgba(212,83,126,.15);opacity:0;animation:cardIn .9s ease 4s forwards;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes cardIn{from{opacity:0;transform:translateY(24px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+.heart{font-size:2.5rem;margin-bottom:.8rem;}
 .gtitle{font-size:.8rem;color:#D4537E;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem;}
-.message{font-size:1.35rem;color:#333;font-style:italic;line-height:1.6;margin:1rem 0;}
-.divider{height:1px;background:#F4C0D1;margin:1.1rem 0;}
+.message{font-size:1.3rem;color:#333;font-style:italic;line-height:1.6;margin:1rem 0;}
+.divider{height:1px;background:#F4C0D1;margin:1rem 0;}
 .from{font-size:13px;color:#888;margin-bottom:.4rem;}
-.sound-info{font-size:11px;color:#D4537E;}
-.player-wrap{margin-top:1.5rem;}
-.play-btn{background:#D4537E;color:white;border:none;border-radius:50px;padding:13px 36px;font-size:15px;cursor:pointer;font-family:Georgia,serif;font-style:italic;transition:background .2s;}
-.play-btn:hover{background:#b83a68;}
-.play-btn.playing{background:#5DCAA5;}
-.prog{width:100%;height:4px;background:#f0f0f0;border-radius:2px;margin-top:12px;overflow:hidden;}
-.prog-fill{height:100%;background:linear-gradient(90deg,#D4537E,#5DCAA5);width:0%;transition:width .3s linear;border-radius:2px;}
-.brand{margin-top:1.8rem;font-size:10px;color:#ccc;letter-spacing:.06em;}
+.info{font-size:11px;color:#D4537E;margin-bottom:1.4rem;}
+.play-btn{background:#D4537E;color:white;border:none;border-radius:50px;padding:14px 40px;font-size:16px;cursor:pointer;font-family:Georgia,serif;font-style:italic;}
+.play-btn.on{background:#5DCAA5;}
+.prog{width:100%;height:4px;background:#f0f0f0;border-radius:2px;margin-top:10px;}
+.bar{height:100%;width:0%;background:linear-gradient(90deg,#D4537E,#5DCAA5);border-radius:2px;transition:width .3s linear;}
+.brand{margin-top:1.6rem;font-size:10px;color:#ccc;letter-spacing:.06em;}
 </style></head><body>
-<div class="anim" id="anim">
+<div class="anim">
   <div class="scene">
     <div class="fl" style="left:15px;top:60px;animation-delay:.3s">♪</div>
     <div class="fl" style="right:15px;top:70px;animation-delay:.6s">♡</div>
@@ -2423,37 +2420,27 @@ body{font-family:Georgia,serif;background:linear-gradient(135deg,#fff5f8 0%,#f0f
     <div class="fl" style="right:30px;top:85px;animation-delay:1.6s">♪</div>
     <div class="cradle">🛏️</div>
     <div class="env">✉️</div>
-    <div class="sp" style="top:8px;left:25px;animation-delay:2.5s">✨</div>
-    <div class="sp" style="top:12px;right:20px;animation-delay:2.7s">🌟</div>
   </div>
   <div class="ready">${readyMsg}</div>
 </div>
-<div class="card" id="card">
-  <div class="heart-icon">♡</div>
+<div class="card">
+  <div class="heart">♡</div>
   <div class="gtitle">${title}</div>
-  <div class="message">${msg}</div>
-  <div class="divider"></div>
+  ${msgLine}
   ${fromLine}
-  <div class="sound-info">♡ Womb sound × Music blend</div>
-  <div class="player-wrap">
-    <audio id="aud" src="data:audio/wav;base64,${b64audio}" preload="auto"></audio>
-    <button class="play-btn" id="pbtn" onclick="tog()">▶ Play</button>
-    <div class="prog"><div class="prog-fill" id="pf"></div></div>
-  </div>
+  <div class="info">♡ Womb sound × Music blend</div>
+  <audio id="au" preload="auto">
+    <source src="data:audio/wav;base64,${b64audio}" type="audio/wav">
+  </audio>
+  <button class="play-btn" id="pb" onclick="tog()">▶ Play</button>
+  <div class="prog"><div class="bar" id="br"></div></div>
   <div class="brand">Baby Harmony</div>
 </div>
 <script>
-setTimeout(()=>{
-  document.getElementById('anim').classList.add('hide');
-  setTimeout(()=>{
-    document.getElementById('anim').style.display='none';
-    document.getElementById('card').classList.add('show');
-  },800);
-},3200);
-const au=document.getElementById('aud'),btn=document.getElementById('pbtn'),pf=document.getElementById('pf');
-au.addEventListener('timeupdate',()=>{if(au.duration)pf.style.width=(au.currentTime/au.duration*100)+'%';});
-au.addEventListener('ended',()=>{btn.textContent='▶ Play';btn.classList.remove('playing');pf.style.width='0%';});
-function tog(){if(au.paused){au.play();btn.textContent='⏸ Pause';btn.classList.add('playing');}else{au.pause();btn.textContent='▶ Play';btn.classList.remove('playing');}}
+var au=document.getElementById('au'),pb=document.getElementById('pb'),br=document.getElementById('br');
+au.addEventListener('timeupdate',function(){if(au.duration)br.style.width=(au.currentTime/au.duration*100)+'%';});
+au.addEventListener('ended',function(){pb.textContent='▶ Play';pb.classList.remove('on');br.style.width='0%';});
+function tog(){if(au.paused){au.play().catch(function(){});pb.textContent='⏸ Pause';pb.classList.add('on');}else{au.pause();pb.textContent='▶ Play';pb.classList.remove('on');}}
 ${'</'}script></body></html>`;
 }
 
