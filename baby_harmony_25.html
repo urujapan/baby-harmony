@@ -2429,16 +2429,26 @@ body{font-family:Georgia,serif;background:linear-gradient(135deg,#fff5f8 0%,#f0f
   ${msgLine}
   ${fromLine}
   <div class="info">♡ Womb sound × Music blend</div>
-  <audio id="au" src="data:audio/wav;base64,${b64audio}" preload="auto"></audio>
+  <audio id="au" preload="auto"></audio>
   <button class="play-btn" id="pb" onclick="tog()">▶ Play</button>
   <div class="prog"><div class="bar" id="br"></div></div>
   <div class="brand">Baby Harmony</div>
 </div>
 <script>
+// Convert base64 → Blob URL at runtime (avoids iOS data URI size limit)
+var _b64='${b64audio}';
+(function(){
+  try{
+    var bin=atob(_b64),arr=new Uint8Array(bin.length);
+    for(var i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);
+    var url=URL.createObjectURL(new Blob([arr],{type:'audio/wav'}));
+    document.getElementById('au').src=url;
+  }catch(e){document.getElementById('pb').textContent='Load err';}
+})();
 var au=document.getElementById('au'),pb=document.getElementById('pb'),br=document.getElementById('br');
 au.addEventListener('timeupdate',function(){if(au.duration)br.style.width=(au.currentTime/au.duration*100)+'%';});
 au.addEventListener('ended',function(){pb.textContent='▶ Play';pb.classList.remove('on');br.style.width='0%';});
-function tog(){if(au.paused){au.play().then(function(){pb.textContent='⏸ Pause';pb.classList.add('on');}).catch(function(e){pb.textContent='▶ Play ('+e.name+')';});}else{au.pause();pb.textContent='▶ Play';pb.classList.remove('on');}}
+function tog(){if(au.paused){au.play().then(function(){pb.textContent='⏸ Pause';pb.classList.add('on');}).catch(function(e){pb.textContent='▶ ('+e.name+')';});}else{au.pause();pb.textContent='▶ Play';pb.classList.remove('on');}}
 ${'</'}script></body></html>`;
 }
 
