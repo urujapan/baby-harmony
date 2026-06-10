@@ -104,8 +104,17 @@ input[type=range]{flex:1;accent-color:#D4537E;}
 .cpbtn{padding:10px 14px;border-radius:8px;border:1px solid #eee;background:#f9f9f9;font-size:12px;color:#333;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:4px;}
 .gpreview{border:1px solid #F4C0D1;border-radius:8px;padding:1.25rem;text-align:center;margin-top:.75rem;}
 .ghost{font-size:28px;color:#D4537E;margin-bottom:.5rem;}
+.gtitle{font-family:'Cormorant Garamond',serif;font-size:1rem;color:#D4537E;letter-spacing:.06em;margin-bottom:.3rem;}
 .gmsg{font-family:'Cormorant Garamond',serif;font-size:1.15rem;font-weight:300;color:#333;font-style:italic;margin-bottom:.4rem;}
 .gdet{font-size:12px;color:#aaa;}
+.gift-result{background:#f9f9f9;border-radius:8px;padding:1rem;margin-top:.75rem;display:none;}
+.gift-result.show{display:block;}
+.qr-wrap{text-align:center;margin-bottom:.75rem;}
+.qr-wrap img{width:140px;height:140px;border-radius:8px;}
+.qr-wrap p{font-size:11px;color:#aaa;margin-top:.4rem;}
+.gift-share-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:.75rem;}
+.gift-share-btn{padding:10px 4px;border-radius:8px;border:1px solid #eee;background:white;font-size:12px;color:#333;cursor:pointer;font-family:'DM Sans',sans-serif;text-align:center;display:flex;align-items:center;justify-content:center;gap:5px;}
+.gift-share-btn:hover{background:#f0f0f0;}
 .womb-prev-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:6px;border:1px solid #F4C0D1;background:#FBEAF0;font-size:12px;color:#D4537E;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:.75rem;}
 .womb-prev-btn.playing{background:#D4537E;color:white;border-color:#D4537E;}
 .hb-prev-btn{position:absolute;bottom:5px;right:6px;width:22px;height:22px;border-radius:50%;background:#D4537E;color:white;display:flex;align-items:center;justify-content:center;font-size:10px;cursor:pointer;transition:background .15s;}
@@ -291,10 +300,12 @@ input[type=range]{flex:1;accent-color:#D4537E;}
 <div class="sec">
   <p class="sec-lbl" id="T19">Create a Gift</p>
   <div class="card">
-    <input class="ginput" type="text" id="gMsg" placeholder="e.g. To our little one, we love you ♡" oninput="refreshPreview()">
+    <input class="ginput" type="text" id="gBaby" placeholder="👶 Baby's name (e.g. Emma)" oninput="refreshPreview()">
+    <input class="ginput" type="text" id="gMsg" placeholder="💬 Message (e.g. We love you so much ♡)" oninput="refreshPreview()">
     <input class="ginput" type="text" id="gFrom" placeholder="From (e.g. Mom &amp; Dad)" oninput="refreshPreview()">
     <div class="gpreview">
       <div class="ghost"><i class="ti ti-heart"></i></div>
+      <div class="gtitle" id="pTitle">Baby Harmony</div>
       <div class="gmsg" id="pMsg">Enter your message above</div>
       <div class="gdet" id="pFrom">From</div>
       <div class="divider"></div>
@@ -307,17 +318,22 @@ input[type=range]{flex:1;accent-color:#D4537E;}
       <button class="abtn" onclick="dlCard()"><i class="ti ti-file"></i> <span id="T21">Download Card</span></button>
       <button class="abtn primary" onclick="doGift()"><i class="ti ti-gift"></i> <span id="T22">Complete Gift</span></button>
     </div>
-    <div class="spanel">
+    <!-- Gift result panel (shown after Complete Gift) -->
+    <div class="gift-result" id="giftResult">
       <div class="stitle" id="T23">Share</div>
-      <div class="sgridbtn">
-        <button class="shbtn" onclick="share('line')"><span class="micon"><i class="ti ti-message-circle"></i></span>LINE</button>
-        <button class="shbtn" onclick="share('x')"><span class="micon"><i class="ti ti-brand-x"></i></span>X</button>
-        <button class="shbtn" onclick="share('ig')"><span class="micon"><i class="ti ti-brand-instagram"></i></span>Instagram</button>
-        <button class="shbtn" onclick="copyLink()"><span class="micon"><i class="ti ti-link"></i></span><span id="T24">Copy Link</span></button>
+      <div class="qr-wrap">
+        <img id="qrImg" src="" alt="QR Code">
+        <p>Scan to open Baby Harmony app</p>
+      </div>
+      <div class="gift-share-row">
+        <button class="gift-share-btn" onclick="share('line')"><i class="ti ti-message-circle"></i> LINE</button>
+        <button class="gift-share-btn" onclick="share('x')"><i class="ti ti-brand-x"></i> X</button>
+        <button class="gift-share-btn" onclick="nativeShare()"><i class="ti ti-share"></i> <span id="T24">Share</span></button>
+        <button class="gift-share-btn" onclick="copyLink()"><i class="ti ti-copy"></i> <span id="T25">Copy Link</span></button>
       </div>
       <div class="lrow">
-        <div class="lbox" id="slink">https://babyharmony.app/s/abc123</div>
-        <button class="cpbtn" onclick="copyLink()"><i class="ti ti-copy"></i> <span id="T25">Copy</span></button>
+        <div class="lbox" id="slink">https://urujapan.github.io/baby-harmony/baby_harmony_25.html</div>
+        <button class="cpbtn" onclick="copyLink()"><i class="ti ti-copy"></i></button>
       </div>
     </div>
   </div>
@@ -371,7 +387,17 @@ function L(l){
 
 function sName(){return{beat:t(5),flow:t(7),breath:t(9),uploaded:document.getElementById('upname').textContent||'Uploaded'}[cs]||t(5);}
 function updateNP(){document.getElementById('npSub').textContent=sName()+' × '+musicDisplayName();}
+function giftTitle(){
+  const baby=document.getElementById('gBaby').value.trim();
+  return baby ? 'Baby Harmony for '+baby : 'Baby Harmony';
+}
+function giftFilename(){
+  const baby=document.getElementById('gBaby').value.trim();
+  const base=baby ? 'Baby_Harmony_for_'+baby.replace(/\s+/g,'_') : 'Baby_Harmony';
+  return base+'.wav';
+}
 function refreshPreview(){
+  document.getElementById('pTitle').textContent=giftTitle();
   document.getElementById('pMsg').textContent=document.getElementById('gMsg').value.trim()||'Enter your message above';
   document.getElementById('pFrom').textContent=document.getElementById('gFrom').value.trim()||'From';
   document.getElementById('pSound').textContent=sName()+' × '+musicDisplayName();
@@ -2080,10 +2106,7 @@ function dlAudio(){
       o.start(tt); o.stop(tt+nd);
     }
   }
-  const defaultName=(document.getElementById('gMsg').value.trim()||'baby_harmony')+'_harmony';
-  const userInput=window.prompt('ファイル名を入力してください（.wav）',defaultName);
-  if(userInput===null) return; // cancelled
-  const filename=(userInput.trim()||defaultName)+'.wav';
+  const filename=giftFilename();
   toast(ts('gen'));
   off.startRendering().then(buf=>{
     const wav=toWav(buf);
@@ -2122,21 +2145,119 @@ function dlCard(){
   a.download='baby_harmony_card.html'; a.click(); toast(ts('dlC'));
 }
 
+// ── Complete Gift: generate audio then share ──────────────────────────────
+let _giftAudioBlob = null; // cached last-generated audio blob
+
 function doGift(){
   if(!document.getElementById('gMsg').value.trim()){toast(ts('msg'));return;}
-  toast(ts('gift'));
+  if(!AC){toast('Please press ▶ Play first.');return;}
+
+  toast(ts('gen'));
+
+  // Build offline render (same as dlAudio)
+  const sr=AC.sampleRate;
+  const bpm=(cs==='uploaded'&&detectedBPM>0)?getEffectiveBPM():parseInt(document.getElementById('vT').value);
+  const beatSec=60/bpm, barSec=beatSec*4;
+  const fadeInSec=FADEIN_BARS*barSec;
+  const introSec=INTRO_BARS*barSec+musicStartOffsetBeats*beatSec;
+  const dur=introSec+32;
+  const off=new OfflineAudioContext(2,Math.ceil(sr*dur),sr);
+  const targetW=parseInt(document.getElementById('vW').value)/100;
+  const targetM=parseInt(document.getElementById('vM').value)/100;
+
+  const wg=off.createGain();
+  wg.gain.setValueAtTime(0,0);
+  wg.gain.linearRampToValueAtTime(targetW,fadeInSec);
+  wg.connect(off.destination);
+
+  if(cs==='uploaded'&&(loopBuffer||rawBuffer)){
+    const buf=loopBuffer||rawBuffer;
+    const s=off.createBufferSource(); s.buffer=buf; s.loop=true;
+    s.connect(wg); s.start(0);
+  } else {
+    const wb=off.createBuffer(1,Math.ceil(sr*dur),sr);
+    const wd=wb.getChannelData(0);
+    const bl=Math.floor(sr*60/bpm);
+    for(let i=0;i<wd.length;i++){const p=i%bl,e=p<bl*0.3?Math.exp(-p/(bl*0.05)):0;wd[i]=Math.sin(2*Math.PI*60*i/sr)*e*0.6+(Math.random()*2-1)*0.05;}
+    const ws=off.createBufferSource(); ws.buffer=wb; ws.connect(wg); ws.start(0);
+  }
+
+  const mg=off.createGain(); mg.gain.value=targetM; mg.connect(off.destination);
+  if(musicFileBuffer){
+    const ms=off.createBufferSource(); ms.buffer=musicFileBuffer; ms.loop=true;
+    ms.playbackRate.value=calcPlaybackRate(); ms.connect(mg);
+    ms.start(introSec,calcPhaseOffsetSec());
+  } else if(cm!=='none'){
+    const fm={lullaby:[261.6,329.6,392,523.3],nature:[174.6,220,261.6,349.2],piano:[293.7,370,440,587.3],classical:[261.6,311.1,392,466.2],ambient:[130.8,164.8,196,261.6]};
+    const notes=fm[cm]||fm.lullaby, nd=60/bpm*2;
+    for(let i=0;i*nd<32;i++){
+      const o=off.createOscillator(),e=off.createGain();
+      o.type='sine'; o.frequency.value=notes[i%notes.length];
+      o.connect(e); e.connect(mg);
+      const tt=introSec+i*nd;
+      e.gain.setValueAtTime(0,tt); e.gain.linearRampToValueAtTime(0.15,tt+0.3); e.gain.exponentialRampToValueAtTime(0.001,tt+nd-0.1);
+      o.start(tt); o.stop(tt+nd);
+    }
+  }
+
+  off.startRendering().then(buf=>{
+    const wav=toWav(buf);
+    _giftAudioBlob=new Blob([wav],{type:'audio/wav'});
+    // Show share panel
+    const appUrl='https://urujapan.github.io/baby-harmony/baby_harmony_25.html';
+    document.getElementById('slink').textContent=appUrl;
+    document.getElementById('qrImg').src='https://api.qrserver.com/v1/create-qr-code/?size=140x140&data='+encodeURIComponent(appUrl);
+    document.getElementById('giftResult').classList.add('show');
+    toast(ts('gift'));
+    // Try native share immediately
+    nativeShare();
+  }).catch(e=>toast('Error: '+e));
+}
+
+async function nativeShare(){
+  const msg=document.getElementById('gMsg').value.trim();
+  const from=document.getElementById('gFrom').value.trim();
+  const title=giftTitle();
+  const text=title+(msg?'\n'+msg:'')+(from?'\n— '+from:'');
+
+  if(!_giftAudioBlob){toast('Please tap "Complete Gift" first.');return;}
+
+  if(navigator.canShare){
+    const file=new File([_giftAudioBlob],giftFilename(),{type:'audio/wav'});
+    if(navigator.canShare({files:[file]})){
+      try{
+        await navigator.share({files:[file],title:title,text:text});
+        return;
+      }catch(e){
+        if(e.name==='AbortError') return; // user cancelled — OK
+      }
+    }
+  }
+  // Fallback: plain text share or just download
+  if(navigator.share){
+    try{
+      await navigator.share({title:title,text:text,url:'https://urujapan.github.io/baby-harmony/baby_harmony_25.html'});
+      return;
+    }catch(e){ if(e.name==='AbortError') return; }
+  }
+  // Last fallback: download
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(_giftAudioBlob);
+  a.download=giftFilename(); a.click();
+  toast(ts('dlA'));
 }
 
 function share(p){
-  const msg=document.getElementById('gMsg').value.trim()||'Baby Harmony Gift';
-  const url='https://babyharmony.app/s/abc123';
-  const txt=encodeURIComponent(msg+' #BabyHarmony');
+  const msg=document.getElementById('gMsg').value.trim()||'Baby Harmony';
+  const url='https://urujapan.github.io/baby-harmony/baby_harmony_25.html';
+  const txt=encodeURIComponent(giftTitle()+' — '+msg+' #BabyHarmony');
   if(p==='x') window.open('https://twitter.com/intent/tweet?text='+txt+'&url='+encodeURIComponent(url),'_blank');
   else if(p==='line') window.open('https://line.me/R/msg/text/?'+txt+'%0A'+encodeURIComponent(url),'_blank');
   else copyLink();
 }
 function copyLink(){
-  navigator.clipboard.writeText(document.getElementById('slink').textContent)
+  const url='https://urujapan.github.io/baby-harmony/baby_harmony_25.html';
+  navigator.clipboard.writeText(url)
     .then(()=>toast(ts('copied'))).catch(()=>toast(ts('fail')));
 }
 let toastTimer;
