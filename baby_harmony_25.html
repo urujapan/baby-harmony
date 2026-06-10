@@ -379,11 +379,15 @@ input[type=range]{flex:1;accent-color:#D4537E;}
         <img id="qrImg" src="" alt="QR Code">
         <p>Scan to open Baby Harmony app</p>
       </div>
+      <div style="font-size:11px;color:#aaa;margin-bottom:6px;">🎵 Audio — LINE / iMessage / WhatsApp</div>
       <div class="gift-share-row">
         <button class="gift-share-btn" onclick="share('line')"><i class="ti ti-message-circle"></i> LINE</button>
-        <button class="gift-share-btn" onclick="share('x')"><i class="ti ti-brand-x"></i> X</button>
-        <button class="gift-share-btn" onclick="nativeShare()"><i class="ti ti-share"></i> <span id="T24">Share</span></button>
-        <button class="gift-share-btn" onclick="copyLink()"><i class="ti ti-copy"></i> <span id="T25">Copy Link</span></button>
+        <button class="gift-share-btn" onclick="nativeShare()"><i class="ti ti-share"></i> <span id="T24">Share Audio</span></button>
+      </div>
+      <div style="font-size:11px;color:#aaa;margin:10px 0 6px;">🎁 Gift Page (animation) — AirDrop / Email</div>
+      <div class="gift-share-row">
+        <button class="gift-share-btn" onclick="dlGiftPage()"><i class="ti ti-download"></i> Save Gift Page</button>
+        <button class="gift-share-btn" onclick="copyLink()"><i class="ti ti-copy"></i> <span id="T25">Copy App Link</span></button>
       </div>
       <div class="lrow">
         <div class="lbox" id="slink">https://urujapan.github.io/baby-harmony/baby_harmony_25.html</div>
@@ -2315,7 +2319,8 @@ function bufToBase64(buffer){
 }
 
 // ── Complete Gift: generate audio then share ──────────────────────────────
-let _giftAudioBlob = null; // cached last-generated audio blob
+let _giftWavBlob  = null; // WAV audio — for LINE/messaging (widely supported)
+let _giftHtmlBlob = null; // HTML gift page — for AirDrop/email (animation + audio)
 
 function showGiftAnim(){
   const overlay=document.getElementById('giftAnim');
@@ -2402,43 +2407,53 @@ function doGift(){
 
   off.startRendering().then(buf=>{
     const wav=toWav(buf);
-    const b64=bufToBase64(wav);
     const baby=document.getElementById('gBaby').value.trim();
     const msg=document.getElementById('gMsg').value.trim();
     const from_=document.getElementById('gFrom').value.trim();
+    const baseName=baby?'BabyHarmony_'+baby.replace(/\s+/g,'_'):'BabyHarmony';
+    // WAV blob for LINE/messaging share
+    _giftWavBlob=new File([wav],baseName+'.wav',{type:'audio/wav'});
+    // HTML gift page blob for AirDrop/email/download
+    const b64=bufToBase64(wav);
     const html=buildGiftPageHTML(b64,baby,msg,from_);
-    const fname=(baby?'BabyHarmony_'+baby.replace(/\s+/g,'_'):'BabyHarmony')+'.html';
-    _giftAudioBlob=new File([html],fname,{type:'text/html'});
+    _giftHtmlBlob=new File([html],baseName+'.html',{type:'text/html'});
     _renderDone=true;
     _maybeReveal();
   }).catch(e=>{hideGiftAnim();toast('Error: '+e);});
 }
 
+// Share WAV audio — works with LINE, iMessage, WhatsApp, etc.
 async function nativeShare(){
-  if(!_giftAudioBlob){toast('Please tap "Complete Gift" first.');return;}
+  if(!_giftWavBlob){toast('Please tap "Complete Gift" first.');return;}
   const title=giftTitle();
   const msg=document.getElementById('gMsg').value.trim();
   const text=title+(msg?'\n'+msg:'');
-
-  // Try sharing the HTML gift file (works on iOS/Android)
-  if(navigator.canShare && navigator.canShare({files:[_giftAudioBlob]})){
+  if(navigator.canShare && navigator.canShare({files:[_giftWavBlob]})){
     try{
-      await navigator.share({files:[_giftAudioBlob],title:title,text:text});
+      await navigator.share({files:[_giftWavBlob],title:title,text:text});
       return;
     }catch(e){ if(e.name==='AbortError') return; }
   }
-  // Fallback: plain URL share
   if(navigator.share){
     try{
       await navigator.share({title:title,text:text,url:'https://urujapan.github.io/baby-harmony/baby_harmony_25.html'});
       return;
     }catch(e){ if(e.name==='AbortError') return; }
   }
-  // Last fallback: download the HTML file
+  // Fallback: download WAV
   const a=document.createElement('a');
-  a.href=URL.createObjectURL(_giftAudioBlob);
-  a.download=_giftAudioBlob.name; a.click();
-  toast('Gift page downloaded!');
+  a.href=URL.createObjectURL(_giftWavBlob);
+  a.download=_giftWavBlob.name; a.click();
+  toast(ts('dlA'));
+}
+
+// Download full HTML gift page (animation + audio) — for AirDrop/email
+function dlGiftPage(){
+  if(!_giftHtmlBlob){toast('Please tap "Complete Gift" first.');return;}
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(_giftHtmlBlob);
+  a.download=_giftHtmlBlob.name; a.click();
+  toast('Gift page downloaded! Share via AirDrop or email.');
 }
 
 function share(p){
