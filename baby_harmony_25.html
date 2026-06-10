@@ -2526,7 +2526,11 @@ function doGift(){
   const beatSec=60/bpm, barSec=beatSec*4;
   const fadeInSec=FADEIN_BARS*barSec;
   const introSec=INTRO_BARS*barSec+musicStartOffsetBeats*beatSec;
-  const dur=introSec+60; // 60s of music content
+  // Use actual BGM duration so the gift plays the full song (cap at 8min for file size)
+  const musicContentSec = musicFileBuffer
+    ? Math.min(musicFileBuffer.duration / calcPlaybackRate(), 480)
+    : 60;
+  const dur=introSec+musicContentSec;
   const off=new OfflineAudioContext(1,Math.ceil(sr*dur),sr);
   const targetW=volToGain(document.getElementById('vW').value);
   const targetM=volToGain(document.getElementById('vM').value);
@@ -2557,7 +2561,7 @@ function doGift(){
   } else if(cm!=='none'){
     const fm={lullaby:[261.6,329.6,392,523.3],nature:[174.6,220,261.6,349.2],piano:[293.7,370,440,587.3],classical:[261.6,311.1,392,466.2],ambient:[130.8,164.8,196,261.6]};
     const notes=fm[cm]||fm.lullaby, nd=60/bpm*2;
-    for(let i=0;i*nd<32;i++){
+    for(let i=0;i*nd<musicContentSec;i++){
       const o=off.createOscillator(),e=off.createGain();
       o.type='sine'; o.frequency.value=notes[i%notes.length];
       o.connect(e); e.connect(mg);
