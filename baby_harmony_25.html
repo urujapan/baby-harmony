@@ -209,7 +209,7 @@ input[type=range]{flex:1;accent-color:#D4537E;}
 <div class="app">
 <div class="lang-bar">
   <button class="lang-btn" onclick="L('ja')">日本語</button>
-  <button class="lang-btn active" onclick="L('en')">English</button>
+  <button class="lang-btn" onclick="L('en')">English</button>
   <button class="lang-btn" onclick="L('zh')">中文</button>
   <button class="lang-btn" onclick="L('zh-TW')">繁體</button>
   <button class="lang-btn" onclick="L('ko')">한국어</button>
@@ -446,6 +446,7 @@ const GT={
   ru:['👶 Имя малыша','напр. Маша','💬 Сообщение','напр. Мы так тебя любим ♡','— От (необязательно)','напр. Мама и Папа','📅 Дата (необязательно)']
 };
 const DRAG={en:'Drag to fine-tune',ja:'ドラッグで微調整',zh:'拖动以微调','zh-TW':'拖動以微調',ko:'드래그로 미세 조정',es:'Arrastra para ajustar',fr:'Glisser pour ajuster',de:'Ziehen zum Anpassen',pt:'Arraste para ajustar',hi:'ड्रैग करके समायोजित करें',id:'Seret untuk menyesuaikan',it:'Trascina per regolare',th:'ลากเพื่อปรับ',vi:'Kéo để tinh chỉnh',ru:'Перетащите для настройки'};
+const PREV={en:'Check heartbeat',ja:'心音を確認',zh:'确认心音','zh-TW':'確認心音',ko:'심음 확인',es:'Verificar latido',fr:'Vérifier le battement',de:'Herzschlag prüfen',pt:'Verificar batimento',hi:'दिल की धड़कन जांचें',id:'Periksa detak jantung',it:'Verifica battito',th:'ตรวจสอบเสียงหัวใจ',vi:'Kiểm tra nhịp tim',ru:'Проверить сердцебиение'};
 const READY={en:'Ready to play',ja:'再生する準備ができています',zh:'准备好播放','zh-TW':'準備好播放',ko:'재생 준비 완료',es:'Listo para reproducir',fr:'Prêt à jouer',de:'Bereit zum Abspielen',pt:'Pronto para reproduzir',hi:'बजाने के लिए तैयार',id:'Siap dimainkan',it:'Pronto per la riproduzione',th:'พร้อมเล่น',vi:'Sẵn sàng phát',ru:'Готово к воспроизведению'};
 const NOW={en:'Now playing...',ja:'再生中...',zh:'播放中...','zh-TW':'播放中...',ko:'재생 중...',es:'Reproduciendo...',fr:'Lecture en cours...',de:'Wird abgespielt...',pt:'Reproduzindo...',hi:'अभी बज रहा है...',id:'Sedang diputar...',it:'In riproduzione...',th:'กำลังเล่น...',vi:'Đang phát...',ru:'Воспроизведение...'};
 
@@ -481,6 +482,7 @@ function L(l){
   document.querySelectorAll('.mn').forEach(el=>el.textContent=mn(el.dataset.k));
   document.getElementById('npTitle').textContent=playing?NOW[l]:READY[l];
   document.getElementById('phaseHint').textContent=DRAG[l]||DRAG.en;
+  document.getElementById('wombPrevLbl').textContent=PREV[l]||PREV.en;
   // Gift section labels
   const gt=GT[l]||GT.en;
   const gLabels=document.querySelectorAll('.ginput-label');
@@ -2387,8 +2389,9 @@ body{font-family:Georgia,serif;background:linear-gradient(135deg,#fff5f8 0%,#f0f
 .anim{position:fixed;inset:0;background:linear-gradient(135deg,#fff5f8,#f0f9f6);display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:10;animation:hideAnim .6s ease 3.4s forwards;}
 @keyframes hideAnim{to{opacity:0;visibility:hidden;pointer-events:none;}}
 .scene{position:relative;width:220px;height:220px;display:flex;align-items:center;justify-content:center;flex-direction:column;}
-.cradle{font-size:72px;transform-origin:center top;animation:rock 1.2s ease-in-out infinite;}
-@keyframes rock{0%{transform:rotate(-10deg)}50%{transform:rotate(10deg)}100%{transform:rotate(-10deg)}}
+.cradle{font-size:64px;transform-origin:center bottom;animation:rock 1.6s ease-in-out infinite;}
+.moon{font-size:28px;position:absolute;top:-10px;opacity:.8;}
+@keyframes rock{0%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}100%{transform:rotate(-8deg)}}
 .fl{position:absolute;font-size:22px;opacity:0;animation:floatUp 2s ease-in forwards;}
 @keyframes floatUp{0%{opacity:0;transform:translateY(0) scale(.7)}20%{opacity:1}80%{opacity:.8}100%{opacity:0;transform:translateY(-90px) scale(1.1)}}
 .env{font-size:44px;opacity:0;animation:flyAway 1.2s ease-in forwards;animation-delay:1.8s;}
@@ -2418,7 +2421,8 @@ body{font-family:Georgia,serif;background:linear-gradient(135deg,#fff5f8 0%,#f0f
     <div class="fl" style="right:45px;top:50px;animation-delay:1.1s">♡</div>
     <div class="fl" style="left:30px;top:90px;animation-delay:1.4s">✨</div>
     <div class="fl" style="right:30px;top:85px;animation-delay:1.6s">♪</div>
-    <div class="cradle">🛏️</div>
+    <div class="moon">🌙</div>
+    <div class="cradle">👶</div>
     <div class="env">✉️</div>
   </div>
   <div class="ready">${readyMsg}</div>
@@ -2498,13 +2502,13 @@ function doGift(){
   // Animation runs for 3.5s
   setTimeout(()=>{ _animDone=true; _maybeReveal(); },3500);
 
-  // Render audio: mono 16kHz 20s (compact for base64 embedding — stays under iOS 2MB limit)
-  const sr=16000;
+  // Render audio: mono 22kHz full length (WAV uploaded to Cloudinary, no size limit)
+  const sr=22050;
   const bpm=(cs==='uploaded'&&detectedBPM>0)?getEffectiveBPM():parseInt(document.getElementById('vT').value);
   const beatSec=60/bpm, barSec=beatSec*4;
   const fadeInSec=FADEIN_BARS*barSec;
   const introSec=INTRO_BARS*barSec+musicStartOffsetBeats*beatSec;
-  const dur=Math.min(introSec+20, 24); // 20s content for gift page
+  const dur=introSec+32; // full length
   const off=new OfflineAudioContext(1,Math.ceil(sr*dur),sr);
   const targetW=volToGain(document.getElementById('vW').value);
   const targetM=volToGain(document.getElementById('vM').value);
@@ -2714,6 +2718,14 @@ function toast(msg){
   }
   document.addEventListener('touchstart', unlockAudio, {passive:true});
   document.addEventListener('mousedown',  unlockAudio, {passive:true});
+})();
+
+// ── Auto-detect language on load ─────────────────────────────────────────
+(function(){
+  const nav=(navigator.language||navigator.userLanguage||'en').toLowerCase();
+  const supported=['ja','zh-TW','zh','ko','es','fr','de','pt','hi','id','it','th','vi','ru','en'];
+  const match=supported.find(l=>nav.startsWith(l==='zh-TW'?'zh-tw':l));
+  L(match||'en');
 })();
 </script>
 </body>
