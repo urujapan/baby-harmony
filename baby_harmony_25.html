@@ -159,9 +159,14 @@ input[type=range]{flex:1;accent-color:#D4537E;}
 .gift-anim-overlay.show{opacity:1;pointer-events:all;}
 .anim-scene{position:relative;width:260px;height:280px;display:flex;flex-direction:column;align-items:center;justify-content:center;}
 
-/* Cradle */
-.anim-cradle{font-size:64px;transform-origin:center top;animation:rock 1.2s ease-in-out infinite;}
-@keyframes rock{0%{transform:rotate(-10deg);}50%{transform:rotate(10deg);}100%{transform:rotate(-10deg);}}
+/* Cradle (CSS-drawn) */
+.anim-cradle{position:relative;width:90px;height:80px;transform-origin:50% 92%;animation:rock 1.6s ease-in-out infinite;}
+.anim-cradle .c-hood{position:absolute;top:0;left:15px;width:60px;height:34px;background:#FBEAF0;border:2.5px solid #E8A0B8;border-radius:50px 50px 0 0;border-bottom:none;}
+.anim-cradle .c-body{position:absolute;bottom:14px;left:5px;width:80px;height:42px;background:#fff5f8;border:2.5px solid #E8A0B8;border-radius:6px 6px 28px 28px;display:flex;align-items:center;justify-content:center;}
+.anim-cradle .c-zz{font-size:18px;margin-top:4px;}
+.anim-cradle .c-rock{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:72px;height:13px;background:#F4C0D1;border-radius:50%;}
+.anim-cradle .c-moon{font-size:24px;position:absolute;top:-16px;left:50%;transform:translateX(-50%);opacity:.85;}
+@keyframes rock{0%{transform:rotate(-8deg);}50%{transform:rotate(8deg);}100%{transform:rotate(-8deg);}}
 
 /* Floating notes & hearts */
 .anim-float{position:absolute;font-size:22px;opacity:0;animation:floatUp 2s ease-in forwards;}
@@ -412,7 +417,12 @@ input[type=range]{flex:1;accent-color:#D4537E;}
     <div class="anim-float f4">♡</div>
     <div class="anim-float f5">♪</div>
     <div class="anim-float f6">✨</div>
-    <div class="anim-cradle">🛏️</div>
+    <div class="anim-cradle">
+      <div class="c-moon">🌙</div>
+      <div class="c-hood"></div>
+      <div class="c-body"><div class="c-zz">😴</div></div>
+      <div class="c-rock"></div>
+    </div>
     <div class="anim-envelope">✉️</div>
     <div class="anim-sparkle sp1">✨</div>
     <div class="anim-sparkle sp2">🌟</div>
@@ -2516,7 +2526,7 @@ function doGift(){
   const beatSec=60/bpm, barSec=beatSec*4;
   const fadeInSec=FADEIN_BARS*barSec;
   const introSec=INTRO_BARS*barSec+musicStartOffsetBeats*beatSec;
-  const dur=introSec+32; // full length
+  const dur=introSec+60; // 60s of music content
   const off=new OfflineAudioContext(1,Math.ceil(sr*dur),sr);
   const targetW=volToGain(document.getElementById('vW').value);
   const targetM=volToGain(document.getElementById('vM').value);
@@ -2580,6 +2590,7 @@ function doGift(){
       document.getElementById('audioLink').textContent=giftPageUrl;
       document.getElementById('audioLinkBox').style.display='block';
       document.getElementById('shareButtons').style.display='grid';
+      document.getElementById('uploadStatus').textContent='✅ 完成！（'+dur.toFixed(0)+'秒）';
       document.getElementById('uploadStatus').className='upload-status done';
       // QR code
       document.getElementById('qrImg').src='https://api.qrserver.com/v1/create-qr-code/?size=140x140&data='+encodeURIComponent(giftPageUrl);
