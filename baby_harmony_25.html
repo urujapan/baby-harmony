@@ -2371,7 +2371,7 @@ function generateCardImage(){
 }
 
 // ── Gift page HTML template ───────────────────────────────────────────────
-function buildGiftPageHTML(audioUrl, baby, msg, from_){
+function buildGiftPageHTML(b64audio, baby, msg, from_){
   const title = baby ? 'Baby Harmony for '+baby : 'Baby Harmony';
   const readyMsg = baby ? 'Gift for '+baby+' is ready! 🎁' : 'Your gift is ready! 🎁';
   const fromLine = from_ ? '<div class="from">— '+from_+'</div>' : '';
@@ -2436,7 +2436,7 @@ body{font-family:Georgia,serif;background:linear-gradient(135deg,#fff5f8 0%,#f0f
   ${fromLine}
   <div class="sound-info">♡ Womb sound × Music blend</div>
   <div class="player-wrap">
-    <audio id="aud" src="${audioUrl}" preload="auto" crossorigin="anonymous"></audio>
+    <audio id="aud" src="data:audio/wav;base64,${b64audio}" preload="auto"></audio>
     <button class="play-btn" id="pbtn" onclick="tog()">▶ Play</button>
     <div class="prog"><div class="prog-fill" id="pf"></div></div>
   </div>
@@ -2503,13 +2503,13 @@ function doGift(){
   // Animation runs for 3.5s
   setTimeout(()=>{ _animDone=true; _maybeReveal(); },3500);
 
-  // Render audio: mono 22kHz 20s (compact for embedding in gift page)
-  const sr=22050;
+  // Render audio: mono 16kHz 20s (compact for base64 embedding — stays under iOS 2MB limit)
+  const sr=16000;
   const bpm=(cs==='uploaded'&&detectedBPM>0)?getEffectiveBPM():parseInt(document.getElementById('vT').value);
   const beatSec=60/bpm, barSec=beatSec*4;
   const fadeInSec=FADEIN_BARS*barSec;
   const introSec=INTRO_BARS*barSec+musicStartOffsetBeats*beatSec;
-  const dur=introSec+32; // full length (same as Download Audio)
+  const dur=Math.min(introSec+20, 24); // 20s content for gift page
   const off=new OfflineAudioContext(1,Math.ceil(sr*dur),sr);
   const targetW=volToGain(document.getElementById('vW').value);
   const targetM=volToGain(document.getElementById('vM').value);
@@ -2557,12 +2557,11 @@ function doGift(){
     const from_=document.getElementById('gFrom').value.trim();
     const baseName=baby?'BabyHarmony_'+baby.replace(/\s+/g,'_'):'BabyHarmony';
     _giftWavBlob=new File([wav],baseName+'.wav',{type:'audio/wav'});
-    // Upload WAV first → get URL → embed URL in HTML (avoids 2MB base64 limit on iOS)
+    // Embed audio as base64 (16kHz 20s ≈ 850KB — safely under iOS 2MB data URI limit)
+    const b64=bufToBase64(wav);
     try{
-      document.getElementById('uploadStatus').textContent='⏳ 音声をアップロード中... (1/2)';
-      const wavUrl = await uploadToCloudinary(_giftWavBlob, baseName+'.wav');
-      document.getElementById('uploadStatus').textContent='⏳ ギフトページを作成中... (2/2)';
-      const html=buildGiftPageHTML(wavUrl,baby,msg,from_);
+      document.getElementById('uploadStatus').textContent='⏳ ギフトを準備中...';
+      const html=buildGiftPageHTML(b64,baby,msg,from_);
       _giftHtmlBlob=new File([html],baseName+'.html',{type:'text/html'});
       const giftPageUrl = await uploadToCloudinary(_giftHtmlBlob, baseName+'.html');
       _audioUrl = giftPageUrl; // primary share URL = the gift page
