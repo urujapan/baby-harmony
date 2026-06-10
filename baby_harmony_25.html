@@ -120,6 +120,9 @@ input[type=range]{flex:1;accent-color:#D4537E;}
 .upload-status{font-size:12px;color:#aaa;text-align:center;padding:.75rem 0;}
 .upload-status.error{color:#e05;}
 .upload-status.done{display:none;}
+.ginput-group{margin-bottom:.6rem;}
+.ginput-label{display:block;font-size:11px;color:#999;margin-bottom:4px;font-weight:500;letter-spacing:.03em;}
+.gtextarea{width:100%;min-height:72px;resize:vertical;font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.5;}
 .womb-prev-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:6px;border:1px solid #F4C0D1;background:#FBEAF0;font-size:12px;color:#D4537E;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:.75rem;}
 .womb-prev-btn.playing{background:#D4537E;color:white;border-color:#D4537E;}
 .hb-prev-btn{position:absolute;bottom:5px;right:6px;width:22px;height:22px;border-radius:50%;background:#D4537E;color:white;display:flex;align-items:center;justify-content:center;font-size:10px;cursor:pointer;transition:background .15s;}
@@ -359,17 +362,25 @@ input[type=range]{flex:1;accent-color:#D4537E;}
 <div class="sec">
   <p class="sec-lbl" id="T19">Create a Gift</p>
   <div class="card">
-    <input class="ginput" type="text" id="gBaby" placeholder="👶 Baby's name (e.g. Emma)" oninput="refreshPreview()">
-    <input class="ginput" type="text" id="gMsg" placeholder="💬 Message (e.g. We love you so much ♡)" oninput="refreshPreview()">
-    <input class="ginput" type="text" id="gFrom" placeholder="From (e.g. Mom &amp; Dad)" oninput="refreshPreview()">
+    <div class="ginput-group">
+      <label class="ginput-label">👶 赤ちゃんのお名前</label>
+      <input class="ginput" type="text" id="gBaby" placeholder="例：Emma、さくら" oninput="refreshPreview()">
+    </div>
+    <div class="ginput-group">
+      <label class="ginput-label">💬 メッセージ</label>
+      <textarea class="ginput gtextarea" id="gMsg" placeholder="例：生まれてきてくれてありがとう ♡" oninput="refreshPreview()"></textarea>
+    </div>
     <div class="gpreview">
       <div class="ghost"><i class="ti ti-heart"></i></div>
       <div class="gtitle" id="pTitle">Baby Harmony</div>
-      <div class="gmsg" id="pMsg">Enter your message above</div>
-      <div class="gdet" id="pFrom">From</div>
+      <div class="gmsg" id="pMsg">メッセージを入力してください</div>
       <div class="divider"></div>
       <div class="gdet" id="pSound">Heartbeat × Lullaby</div>
       <div class="gdet" style="color:#D4537E;font-size:11px;margin-top:4px;">Womb sound × Music blend</div>
+    </div>
+    <div class="ginput-group" style="margin-top:.75rem;">
+      <label class="ginput-label" style="color:#bbb;">— From（任意）</label>
+      <input class="ginput" type="text" id="gFrom" placeholder="例：Mom &amp; Dad" oninput="refreshPreview()" style="border-color:#eee;color:#aaa;">
     </div>
     <div class="divider"></div>
     <div class="arow">
@@ -470,7 +481,7 @@ function L(l){
   for(let i=0;i<=25;i++){const el=document.getElementById('T'+i);if(el){if(i===0)el.innerHTML=t(0);else el.textContent=t(i);}}
   document.querySelectorAll('.mn').forEach(el=>el.textContent=mn(el.dataset.k));
   document.getElementById('npTitle').textContent=playing?NOW[l]:READY[l];
-  document.getElementById('gMsg').placeholder=t(11);
+  // gMsg placeholder stays fixed (not overridden by i18n)
   refreshPreview(); updateNP();
 }
 
@@ -487,8 +498,7 @@ function giftFilename(){
 }
 function refreshPreview(){
   document.getElementById('pTitle').textContent=giftTitle();
-  document.getElementById('pMsg').textContent=document.getElementById('gMsg').value.trim()||'Enter your message above';
-  document.getElementById('pFrom').textContent=document.getElementById('gFrom').value.trim()||'From';
+  document.getElementById('pMsg').textContent=document.getElementById('gMsg').value.trim()||'メッセージを入力してください';
   document.getElementById('pSound').textContent=sName()+' × '+musicDisplayName();
 }
 
@@ -2234,6 +2244,99 @@ function dlCard(){
   a.download='baby_harmony_card.html'; a.click(); toast(ts('dlC'));
 }
 
+// ── Gift card image (Canvas → PNG → Cloudinary) ──────────────────────────
+function generateCardImage(){
+  const baby  = document.getElementById('gBaby').value.trim();
+  const msg   = document.getElementById('gMsg').value.trim() || '...';
+  const from_ = document.getElementById('gFrom').value.trim();
+  const sound = sName()+' × '+musicDisplayName();
+
+  const W=800, H=1000;
+  const cv=document.createElement('canvas');
+  cv.width=W; cv.height=H;
+  const c=cv.getContext('2d');
+
+  // Background gradient
+  const bg=c.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,'#fff5f8'); bg.addColorStop(1,'#f0f9f6');
+  c.fillStyle=bg; c.fillRect(0,0,W,H);
+
+  // Card shadow + white card
+  const cx=60, cy=80, cw=W-120, ch=H-160, r=40;
+  c.shadowColor='rgba(212,83,126,.12)'; c.shadowBlur=40; c.shadowOffsetY=8;
+  c.fillStyle='white';
+  c.beginPath();
+  c.moveTo(cx+r,cy); c.lineTo(cx+cw-r,cy);
+  c.arcTo(cx+cw,cy,cx+cw,cy+r,r); c.lineTo(cx+cw,cy+ch-r);
+  c.arcTo(cx+cw,cy+ch,cx+cw-r,cy+ch,r); c.lineTo(cx+r,cy+ch);
+  c.arcTo(cx,cy+ch,cx,cy+ch-r,r); c.lineTo(cx,cy+r);
+  c.arcTo(cx,cy,cx+r,cy,r); c.closePath(); c.fill();
+  c.shadowColor='transparent';
+
+  const mid=W/2;
+  let y=cy+90;
+
+  // Heart
+  c.font='72px serif'; c.textAlign='center'; c.fillStyle='#D4537E';
+  c.fillText('♡', mid, y); y+=70;
+
+  // Title
+  if(baby){
+    c.font='500 28px "DM Sans", sans-serif';
+    c.fillStyle='#D4537E'; c.letterSpacing='0.06em';
+    c.fillText('Baby Harmony for '+baby, mid, y); y+=50;
+  } else {
+    c.font='500 28px "DM Sans", sans-serif';
+    c.fillStyle='#D4537E';
+    c.fillText('Baby Harmony', mid, y); y+=50;
+  }
+
+  // Divider
+  c.strokeStyle='#F4C0D1'; c.lineWidth=1;
+  c.beginPath(); c.moveTo(cx+60,y); c.lineTo(cx+cw-60,y); c.stroke(); y+=50;
+
+  // Message (word wrap)
+  c.font='300 italic 38px Georgia, serif';
+  c.fillStyle='#333';
+  const words=msg.split(' '), lineW=cw-140, lines=[];
+  let line='';
+  for(const w of words){
+    const test=line?line+' '+w:w;
+    if(c.measureText(test).width>lineW&&line){lines.push(line);line=w;}
+    else line=test;
+  }
+  if(line) lines.push(line);
+  for(const l of lines){ c.fillText(l,mid,y); y+=54; }
+  y+=20;
+
+  // Divider
+  c.strokeStyle='#F4C0D1';
+  c.beginPath(); c.moveTo(cx+60,y); c.lineTo(cx+cw-60,y); c.stroke(); y+=40;
+
+  // Sound info
+  c.font='22px "DM Sans", sans-serif';
+  c.fillStyle='#aaa';
+  c.fillText(sound, mid, y); y+=32;
+  c.fillStyle='#D4537E'; c.font='20px "DM Sans", sans-serif';
+  c.fillText('Womb sound × Music blend', mid, y); y+=60;
+
+  // From
+  if(from_){
+    c.font='italic 26px Georgia, serif';
+    c.fillStyle='#888';
+    c.fillText('— '+from_, mid, y); y+=50;
+  }
+
+  // Branding
+  c.font='20px "DM Sans", sans-serif';
+  c.fillStyle='#ddd';
+  c.fillText('Baby Harmony', mid, cy+ch-40);
+
+  return new Promise(resolve=>{
+    cv.toBlob(blob=>resolve(blob),'image/png');
+  });
+}
+
 // ── Gift page HTML template ───────────────────────────────────────────────
 function buildGiftPageHTML(b64audio, baby, msg, from_){
   const title = baby ? 'Baby Harmony for '+baby : 'Baby Harmony';
@@ -2425,9 +2528,16 @@ function doGift(){
     const html=buildGiftPageHTML(b64,baby,msg,from_);
     _giftHtmlBlob=new File([html],baseName+'.html',{type:'text/html'});
     _giftWavBlob=new File([wav],baseName+'.wav',{type:'audio/wav'});
-    // Upload to Cloudinary and get sharable URL
+    // Upload audio + card image to Cloudinary in parallel
     try{
-      _audioUrl = await uploadToCloudinary(_giftWavBlob, baseName+'.wav');
+      const cardBlob = await generateCardImage();
+      const cardFile = new File([cardBlob], baseName+'.png', {type:'image/png'});
+      const [audioUrl, cardUrl] = await Promise.all([
+        uploadToCloudinary(_giftWavBlob, baseName+'.wav'),
+        uploadCardToCloudinary(cardFile, baseName+'.png')
+      ]);
+      _audioUrl = audioUrl;
+      _cardUrl  = cardUrl;
       // Show audio link
       document.getElementById('audioLink').textContent=_audioUrl;
       document.getElementById('audioLinkBox').style.display='block';
@@ -2439,7 +2549,6 @@ function doGift(){
     }catch(e){
       document.getElementById('uploadStatus').textContent='⚠️ アップロード失敗。ネットワークを確認してください。';
       document.getElementById('uploadStatus').className='upload-status error';
-      // Fallback: show share buttons without link
       document.getElementById('shareButtons').style.display='grid';
     }
     _renderDone=true;
@@ -2484,7 +2593,8 @@ function dlGiftPage(){
 // ── Cloudinary upload ─────────────────────────────────────────────────────
 const CLD_CLOUD  = 'dsspyytqj';
 const CLD_PRESET = 'baby_harmony_gift';
-let _audioUrl = ''; // Cloudinary URL after upload
+let _audioUrl = ''; // Cloudinary audio URL
+let _cardUrl  = ''; // Cloudinary card image URL
 
 async function uploadToCloudinary(wavBlob, filename){
   const fd = new FormData();
@@ -2500,20 +2610,34 @@ async function uploadToCloudinary(wavBlob, filename){
   return data.secure_url;
 }
 
-function buildShareText(audioUrl){
+async function uploadCardToCloudinary(pngFile, filename){
+  const fd = new FormData();
+  fd.append('file', pngFile, filename);
+  fd.append('upload_preset', CLD_PRESET);
+  const res = await fetch(
+    `https://api.cloudinary.com/v1_1/${CLD_CLOUD}/image/upload`,
+    {method:'POST', body:fd}
+  );
+  if(!res.ok) return ''; // card image is optional
+  const data = await res.json();
+  return data.secure_url || '';
+}
+
+function buildShareText(audioUrl, cardUrl){
   const baby = document.getElementById('gBaby').value.trim();
   const msg  = document.getElementById('gMsg').value.trim();
   const from = document.getElementById('gFrom').value.trim();
-  let text = giftTitle();
-  if(msg)  text += '\n\n💬 '+msg;
+  let text = '🎁 '+giftTitle();
+  if(msg)    text += '\n\n💬 '+msg;
+  if(cardUrl)text += '\n\n🖼 Card: '+cardUrl;
   text += '\n\n🎵 Listen: '+audioUrl;
-  if(from) text += '\n\n— '+from;
+  if(from)   text += '\n\n— '+from;
   return text;
 }
 
 function shareVia(platform){
   if(!_audioUrl){toast('Please tap "Complete Gift" first.');return;}
-  const text = buildShareText(_audioUrl);
+  const text = buildShareText(_audioUrl, _cardUrl);
   const enc  = encodeURIComponent(text);
   if(platform==='line')     window.open('https://line.me/R/msg/text/?'+enc,'_blank');
   else if(platform==='whatsapp') window.open('https://wa.me/?text='+enc,'_blank');
