@@ -256,7 +256,7 @@ input[type=range]{flex:1;accent-color:#D4537E;}
         <canvas id="gridCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;"></canvas>
         <div id="wombPlayhead" style="position:absolute;top:0;width:2px;height:100%;background:#D4537E;opacity:0.85;display:none;pointer-events:none;border-radius:1px;"></div>
       </div>
-      <p class="phase-drag-hint" id="phaseHint">← → 音楽グリッドをドラッグして心音の拍に合わせる（再生中も調整可）</p>
+      <p class="phase-drag-hint" id="phaseHint">Drag to fine-tune</p>
       <div class="detect-info" id="detectInfo">Analyzing...</div>
       <button class="womb-prev-btn" id="wombPrevBtn" onclick="toggleWombPreview()">
         <i class="ti ti-player-play" id="wombPrevIco"></i><span id="wombPrevLbl">心音を確認</span>
@@ -265,26 +265,9 @@ input[type=range]{flex:1;accent-color:#D4537E;}
         <summary style="font-size:11px;color:#bbb;cursor:pointer;user-select:none;">Debug info</summary>
         <div style="font-size:11px;font-family:monospace;color:#888;margin-top:4px;padding:6px 10px;background:#f5f5f5;border-radius:6px;" id="debugInfo">—</div>
       </details>
-      <div class="offset-row" style="margin-top:.75rem;flex-wrap:wrap;gap:6px;">
-        <span class="offset-lbl">Heart BPM:</span>
+      <div class="offset-row" style="margin-top:.75rem;">
         <span style="font-size:13px;color:#D4537E;font-weight:500;" id="bpmAdjDisplay">—</span>
-        <div class="offset-btns" style="margin-left:auto;">
-          <button class="obtn" onclick="adjustDetectedBPM(-5)" title="−5 bpm">−5</button>
-          <button class="obtn" onclick="adjustDetectedBPM(-1)" title="−1 bpm">−1</button>
-          <button class="obtn" onclick="adjustDetectedBPM(1)" title="+1 bpm">+1</button>
-          <button class="obtn" onclick="adjustDetectedBPM(5)" title="+5 bpm">+5</button>
-          <button class="obtn" onclick="adjustDetectedBPM(0)" title="ダブルカウント補正（÷2）" style="font-size:11px;color:#854F0B;border-color:#F4C0D1;">÷2</button>
-        </div>
-      </div>
-      <div class="offset-row">
-        <span class="offset-lbl" id="T_offsetLbl">Adjust start:</span>
-        <div class="offset-btns">
-          <button class="obtn" onclick="shiftLoop(-4)" title="−4 beats">⟨⟨</button>
-          <button class="obtn" onclick="shiftLoop(-1)" title="−1 beat">⟨</button>
-          <button class="obtn" onclick="shiftLoop(1)" title="+1 beat">⟩</button>
-          <button class="obtn" onclick="shiftLoop(4)" title="+4 beats">⟩⟩</button>
-        </div>
-        <button class="re-detect-btn" onclick="runDetect()"><i class="ti ti-refresh" style="font-size:14px;"></i> <span id="T_redetect">Re-detect</span></button>
+        <button class="re-detect-btn" style="margin-left:auto;" onclick="runDetect()"><i class="ti ti-refresh" style="font-size:14px;"></i> <span id="T_redetect">Re-detect</span></button>
       </div>
     </div>
 
@@ -472,6 +455,7 @@ const GT={
   vi:['👶 Tên của bé','ví dụ: Emma','💬 Lời nhắn','ví dụ: Ba mẹ yêu con rất nhiều ♡','— Từ (tùy chọn)','ví dụ: Ba & Mẹ','📅 Ngày (tùy chọn)'],
   ru:['👶 Имя малыша','напр. Маша','💬 Сообщение','напр. Мы так тебя любим ♡','— От (необязательно)','напр. Мама и Папа','📅 Дата (необязательно)']
 };
+const DRAG={en:'Drag to fine-tune',ja:'ドラッグで微調整',zh:'拖动以微调','zh-TW':'拖動以微調',ko:'드래그로 미세 조정',es:'Arrastra para ajustar',fr:'Glisser pour ajuster',de:'Ziehen zum Anpassen',pt:'Arraste para ajustar',hi:'ड्रैग करके समायोजित करें',id:'Seret untuk menyesuaikan',it:'Trascina per regolare',th:'ลากเพื่อปรับ',vi:'Kéo để tinh chỉnh',ru:'Перетащите для настройки'};
 const READY={en:'Ready to play',ja:'再生する準備ができています',zh:'准备好播放','zh-TW':'準備好播放',ko:'재생 준비 완료',es:'Listo para reproducir',fr:'Prêt à jouer',de:'Bereit zum Abspielen',pt:'Pronto para reproduzir',hi:'बजाने के लिए तैयार',id:'Siap dimainkan',it:'Pronto per la riproduzione',th:'พร้อมเล่น',vi:'Sẵn sàng phát',ru:'Готово к воспроизведению'};
 const NOW={en:'Now playing...',ja:'再生中...',zh:'播放中...','zh-TW':'播放中...',ko:'재생 중...',es:'Reproduciendo...',fr:'Lecture en cours...',de:'Wird abgespielt...',pt:'Reproduzindo...',hi:'अभी बज रहा है...',id:'Sedang diputar...',it:'In riproduzione...',th:'กำลังเล่น...',vi:'Đang phát...',ru:'Воспроизведение...'};
 
@@ -506,6 +490,7 @@ function L(l){
   for(let i=0;i<=25;i++){const el=document.getElementById('T'+i);if(el){if(i===0)el.innerHTML=t(0);else el.textContent=t(i);}}
   document.querySelectorAll('.mn').forEach(el=>el.textContent=mn(el.dataset.k));
   document.getElementById('npTitle').textContent=playing?NOW[l]:READY[l];
+  document.getElementById('phaseHint').textContent=DRAG[l]||DRAG.en;
   // Gift section labels
   const gt=GT[l]||GT.en;
   const gLabels=document.querySelectorAll('.ginput-label');
