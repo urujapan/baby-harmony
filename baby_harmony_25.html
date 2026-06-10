@@ -524,7 +524,10 @@ function giftFilename(){
 }
 function refreshPreview(){
   document.getElementById('pTitle').textContent=giftTitle();
-  document.getElementById('pMsg').textContent=document.getElementById('gMsg').value.trim()||'メッセージを入力してください';
+  const msg=document.getElementById('gMsg').value.trim();
+  const pMsg=document.getElementById('pMsg');
+  pMsg.textContent=msg;
+  pMsg.style.display=msg?'block':'none';
   document.getElementById('pSound').textContent=sName()+' × '+musicDisplayName();
 }
 
