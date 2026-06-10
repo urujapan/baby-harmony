@@ -369,8 +369,6 @@ input[type=range]{flex:1;accent-color:#D4537E;}
     </div>
     <div class="divider"></div>
     <div class="arow">
-      <button class="abtn" onclick="dlAudio()"><i class="ti ti-download"></i> <span id="T20">Download Audio</span></button>
-      <button class="abtn" onclick="dlCard()"><i class="ti ti-file"></i> <span id="T21">Download Card</span></button>
       <button class="abtn primary" onclick="doGift()"><i class="ti ti-gift"></i> <span id="T22">Complete Gift</span></button>
     </div>
     <!-- Gift result panel (shown after Complete Gift) -->
@@ -487,6 +485,7 @@ function mn(k){return MN[cl][k]||k;}
 
 function L(l){
   cl=l;
+  document.documentElement.lang=l; // date input format follows html lang
   document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.textContent.trim()===LL[l]));
   for(let i=0;i<=25;i++){const el=document.getElementById('T'+i);if(el){if(i===0)el.innerHTML=t(0);else el.textContent=t(i);}}
   document.querySelectorAll('.mn').forEach(el=>el.textContent=mn(el.dataset.k));
