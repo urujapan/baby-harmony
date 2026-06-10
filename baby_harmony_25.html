@@ -2217,6 +2217,103 @@ function dlCard(){
   a.download='baby_harmony_card.html'; a.click(); toast(ts('dlC'));
 }
 
+// ── Gift page HTML template ───────────────────────────────────────────────
+function buildGiftPageHTML(b64audio, baby, msg, from_){
+  const title = baby ? 'Baby Harmony for '+baby : 'Baby Harmony';
+  const readyMsg = baby ? 'Gift for '+baby+' is ready! 🎁' : 'Your gift is ready! 🎁';
+  const fromLine = from_ ? '<div class="from">— '+from_+'</div>' : '';
+  return `<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${title}</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:Georgia,serif;background:linear-gradient(135deg,#fff5f8 0%,#f0f9f6 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+/* Animation */
+.anim{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:10;transition:opacity .8s;}
+.anim.hide{opacity:0;pointer-events:none;}
+.scene{position:relative;width:220px;height:220px;display:flex;align-items:center;justify-content:center;flex-direction:column;}
+.cradle{font-size:72px;transform-origin:center top;animation:rock 1.2s ease-in-out infinite;}
+@keyframes rock{0%{transform:rotate(-10deg)}50%{transform:rotate(10deg)}100%{transform:rotate(-10deg)}}
+.fl{position:absolute;font-size:22px;opacity:0;animation:floatUp 2s ease-in forwards;}
+@keyframes floatUp{0%{opacity:0;transform:translateY(0) scale(.7)}20%{opacity:1}80%{opacity:.8}100%{opacity:0;transform:translateY(-90px) scale(1.1)}}
+.env{font-size:44px;opacity:0;animation:flyAway 1.2s ease-in forwards;animation-delay:1.8s;}
+@keyframes flyAway{0%{opacity:0;transform:translate(0,0) scale(.8) rotate(0)}20%{opacity:1}100%{opacity:0;transform:translate(140px,-140px) scale(.4) rotate(20deg)}}
+.sp{position:absolute;font-size:14px;opacity:0;animation:sparkle 1s ease forwards;}
+@keyframes sparkle{0%{opacity:0;transform:scale(0)}50%{opacity:1;transform:scale(1.3)}100%{opacity:0;transform:scale(1)}}
+.ready{font-size:1.25rem;color:#D4537E;font-style:italic;opacity:0;animation:fadeIn .6s ease forwards;animation-delay:2.6s;text-align:center;margin-top:16px;padding:0 20px;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+/* Card */
+.card{display:none;max-width:360px;width:90%;background:white;border-radius:20px;padding:2.5rem 2rem;text-align:center;box-shadow:0 8px 40px rgba(212,83,126,.15);}
+.card.show{display:block;animation:cardIn .8s ease;}
+@keyframes cardIn{from{opacity:0;transform:translateY(30px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+.heart-icon{font-size:2.5rem;color:#D4537E;margin-bottom:.8rem;}
+.gtitle{font-size:.8rem;color:#D4537E;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem;}
+.message{font-size:1.35rem;color:#333;font-style:italic;line-height:1.6;margin:1rem 0;}
+.divider{height:1px;background:#F4C0D1;margin:1.1rem 0;}
+.from{font-size:13px;color:#888;margin-bottom:.4rem;}
+.sound-info{font-size:11px;color:#D4537E;}
+.player-wrap{margin-top:1.5rem;}
+.play-btn{background:#D4537E;color:white;border:none;border-radius:50px;padding:13px 36px;font-size:15px;cursor:pointer;font-family:Georgia,serif;font-style:italic;transition:background .2s;}
+.play-btn:hover{background:#b83a68;}
+.play-btn.playing{background:#5DCAA5;}
+.prog{width:100%;height:4px;background:#f0f0f0;border-radius:2px;margin-top:12px;overflow:hidden;}
+.prog-fill{height:100%;background:linear-gradient(90deg,#D4537E,#5DCAA5);width:0%;transition:width .3s linear;border-radius:2px;}
+.brand{margin-top:1.8rem;font-size:10px;color:#ccc;letter-spacing:.06em;}
+</style></head><body>
+<div class="anim" id="anim">
+  <div class="scene">
+    <div class="fl" style="left:15px;top:60px;animation-delay:.3s">♪</div>
+    <div class="fl" style="right:15px;top:70px;animation-delay:.6s">♡</div>
+    <div class="fl" style="left:45px;top:40px;animation-delay:.9s">♫</div>
+    <div class="fl" style="right:45px;top:50px;animation-delay:1.1s">♡</div>
+    <div class="fl" style="left:30px;top:90px;animation-delay:1.4s">✨</div>
+    <div class="fl" style="right:30px;top:85px;animation-delay:1.6s">♪</div>
+    <div class="cradle">🛏️</div>
+    <div class="env">✉️</div>
+    <div class="sp" style="top:8px;left:25px;animation-delay:2.5s">✨</div>
+    <div class="sp" style="top:12px;right:20px;animation-delay:2.7s">🌟</div>
+  </div>
+  <div class="ready">${readyMsg}</div>
+</div>
+<div class="card" id="card">
+  <div class="heart-icon">♡</div>
+  <div class="gtitle">${title}</div>
+  <div class="message">${msg}</div>
+  <div class="divider"></div>
+  ${fromLine}
+  <div class="sound-info">♡ Womb sound × Music blend</div>
+  <div class="player-wrap">
+    <audio id="aud" src="data:audio/wav;base64,${b64audio}"></audio>
+    <button class="play-btn" id="pbtn" onclick="tog()">▶ Play</button>
+    <div class="prog"><div class="prog-fill" id="pf"></div></div>
+  </div>
+  <div class="brand">Baby Harmony</div>
+</div>
+<script>
+setTimeout(()=>{
+  document.getElementById('anim').classList.add('hide');
+  setTimeout(()=>{
+    document.getElementById('anim').style.display='none';
+    document.getElementById('card').classList.add('show');
+  },800);
+},3200);
+const au=document.getElementById('aud'),btn=document.getElementById('pbtn'),pf=document.getElementById('pf');
+au.addEventListener('timeupdate',()=>{if(au.duration)pf.style.width=(au.currentTime/au.duration*100)+'%';});
+au.addEventListener('ended',()=>{btn.textContent='▶ Play';btn.classList.remove('playing');pf.style.width='0%';});
+function tog(){if(au.paused){au.play();btn.textContent='⏸ Pause';btn.classList.add('playing');}else{au.pause();btn.textContent='▶ Play';btn.classList.remove('playing');}}
+</script></body></html>`;
+}
+
+function bufToBase64(buffer){
+  const bytes=new Uint8Array(buffer);
+  let bin='';
+  const chunk=8192;
+  for(let i=0;i<bytes.length;i+=chunk){
+    bin+=String.fromCharCode(...bytes.subarray(i,i+chunk));
+  }
+  return btoa(bin);
+}
+
 // ── Complete Gift: generate audio then share ──────────────────────────────
 let _giftAudioBlob = null; // cached last-generated audio blob
 
@@ -2256,14 +2353,14 @@ function doGift(){
   // Animation runs for 3.5s
   setTimeout(()=>{ _animDone=true; _maybeReveal(); },3500);
 
-  // Build offline render (same as dlAudio)
-  const sr=AC.sampleRate;
+  // Render audio: mono 22kHz 20s (compact for embedding in gift page)
+  const sr=22050;
   const bpm=(cs==='uploaded'&&detectedBPM>0)?getEffectiveBPM():parseInt(document.getElementById('vT').value);
   const beatSec=60/bpm, barSec=beatSec*4;
   const fadeInSec=FADEIN_BARS*barSec;
   const introSec=INTRO_BARS*barSec+musicStartOffsetBeats*beatSec;
-  const dur=introSec+32;
-  const off=new OfflineAudioContext(2,Math.ceil(sr*dur),sr);
+  const dur=Math.min(introSec+20, 24); // max 24s for gift page
+  const off=new OfflineAudioContext(1,Math.ceil(sr*dur),sr);
   const targetW=parseInt(document.getElementById('vW').value)/100;
   const targetM=parseInt(document.getElementById('vM').value)/100;
 
@@ -2273,6 +2370,7 @@ function doGift(){
   wg.connect(off.destination);
 
   if(cs==='uploaded'&&(loopBuffer||rawBuffer)){
+    // Resample uploaded buffer for gift page
     const buf=loopBuffer||rawBuffer;
     const s=off.createBufferSource(); s.buffer=buf; s.loop=true;
     s.connect(wg); s.start(0);
@@ -2292,7 +2390,7 @@ function doGift(){
   } else if(cm!=='none'){
     const fm={lullaby:[261.6,329.6,392,523.3],nature:[174.6,220,261.6,349.2],piano:[293.7,370,440,587.3],classical:[261.6,311.1,392,466.2],ambient:[130.8,164.8,196,261.6]};
     const notes=fm[cm]||fm.lullaby, nd=60/bpm*2;
-    for(let i=0;i*nd<32;i++){
+    for(let i=0;i*nd<20;i++){
       const o=off.createOscillator(),e=off.createGain();
       o.type='sine'; o.frequency.value=notes[i%notes.length];
       o.connect(e); e.connect(mg);
@@ -2304,43 +2402,43 @@ function doGift(){
 
   off.startRendering().then(buf=>{
     const wav=toWav(buf);
-    _giftAudioBlob=new Blob([wav],{type:'audio/wav'});
+    const b64=bufToBase64(wav);
+    const baby=document.getElementById('gBaby').value.trim();
+    const msg=document.getElementById('gMsg').value.trim();
+    const from_=document.getElementById('gFrom').value.trim();
+    const html=buildGiftPageHTML(b64,baby,msg,from_);
+    const fname=(baby?'BabyHarmony_'+baby.replace(/\s+/g,'_'):'BabyHarmony')+'.html';
+    _giftAudioBlob=new File([html],fname,{type:'text/html'});
     _renderDone=true;
     _maybeReveal();
   }).catch(e=>{hideGiftAnim();toast('Error: '+e);});
 }
 
 async function nativeShare(){
-  const msg=document.getElementById('gMsg').value.trim();
-  const from=document.getElementById('gFrom').value.trim();
-  const title=giftTitle();
-  const text=title+(msg?'\n'+msg:'')+(from?'\n— '+from:'');
-
   if(!_giftAudioBlob){toast('Please tap "Complete Gift" first.');return;}
+  const title=giftTitle();
+  const msg=document.getElementById('gMsg').value.trim();
+  const text=title+(msg?'\n'+msg:'');
 
-  if(navigator.canShare){
-    const file=new File([_giftAudioBlob],giftFilename(),{type:'audio/wav'});
-    if(navigator.canShare({files:[file]})){
-      try{
-        await navigator.share({files:[file],title:title,text:text});
-        return;
-      }catch(e){
-        if(e.name==='AbortError') return; // user cancelled — OK
-      }
-    }
+  // Try sharing the HTML gift file (works on iOS/Android)
+  if(navigator.canShare && navigator.canShare({files:[_giftAudioBlob]})){
+    try{
+      await navigator.share({files:[_giftAudioBlob],title:title,text:text});
+      return;
+    }catch(e){ if(e.name==='AbortError') return; }
   }
-  // Fallback: plain text share or just download
+  // Fallback: plain URL share
   if(navigator.share){
     try{
       await navigator.share({title:title,text:text,url:'https://urujapan.github.io/baby-harmony/baby_harmony_25.html'});
       return;
     }catch(e){ if(e.name==='AbortError') return; }
   }
-  // Last fallback: download
+  // Last fallback: download the HTML file
   const a=document.createElement('a');
   a.href=URL.createObjectURL(_giftAudioBlob);
-  a.download=giftFilename(); a.click();
-  toast(ts('dlA'));
+  a.download=_giftAudioBlob.name; a.click();
+  toast('Gift page downloaded!');
 }
 
 function share(p){
