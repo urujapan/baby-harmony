@@ -2429,9 +2429,7 @@ body{font-family:Georgia,serif;background:linear-gradient(135deg,#fff5f8 0%,#f0f
   ${msgLine}
   ${fromLine}
   <div class="info">♡ Womb sound × Music blend</div>
-  <audio id="au" preload="auto">
-    <source src="data:audio/wav;base64,${b64audio}" type="audio/wav">
-  </audio>
+  <audio id="au" src="data:audio/wav;base64,${b64audio}" preload="auto"></audio>
   <button class="play-btn" id="pb" onclick="tog()">▶ Play</button>
   <div class="prog"><div class="bar" id="br"></div></div>
   <div class="brand">Baby Harmony</div>
@@ -2440,7 +2438,7 @@ body{font-family:Georgia,serif;background:linear-gradient(135deg,#fff5f8 0%,#f0f
 var au=document.getElementById('au'),pb=document.getElementById('pb'),br=document.getElementById('br');
 au.addEventListener('timeupdate',function(){if(au.duration)br.style.width=(au.currentTime/au.duration*100)+'%';});
 au.addEventListener('ended',function(){pb.textContent='▶ Play';pb.classList.remove('on');br.style.width='0%';});
-function tog(){if(au.paused){au.play().catch(function(){});pb.textContent='⏸ Pause';pb.classList.add('on');}else{au.pause();pb.textContent='▶ Play';pb.classList.remove('on');}}
+function tog(){if(au.paused){au.play().then(function(){pb.textContent='⏸ Pause';pb.classList.add('on');}).catch(function(e){pb.textContent='▶ Play ('+e.name+')';});}else{au.pause();pb.textContent='▶ Play';pb.classList.remove('on');}}
 ${'</'}script></body></html>`;
 }
 
