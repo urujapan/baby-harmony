@@ -2371,7 +2371,7 @@ function generateCardImage(){
 }
 
 // ── Gift page HTML template ───────────────────────────────────────────────
-function buildGiftPageHTML(b64audio, baby, msg, from_){
+function buildGiftPageHTML(audioUrl, baby, msg, from_){
   const title = baby ? 'Baby Harmony for '+baby : 'Baby Harmony';
   const readyMsg = baby ? 'Gift for '+baby+' is ready! 🎁' : 'Your gift is ready! 🎁';
   const fromLine = from_ ? '<div class="from">— '+from_+'</div>' : '';
@@ -2436,7 +2436,7 @@ body{font-family:Georgia,serif;background:linear-gradient(135deg,#fff5f8 0%,#f0f
   ${fromLine}
   <div class="sound-info">♡ Womb sound × Music blend</div>
   <div class="player-wrap">
-    <audio id="aud" src="data:audio/wav;base64,${b64audio}"></audio>
+    <audio id="aud" src="${b64audio}" preload="auto" crossorigin="anonymous"></audio>
     <button class="play-btn" id="pbtn" onclick="tog()">▶ Play</button>
     <div class="prog"><div class="prog-fill" id="pf"></div></div>
   </div>
@@ -2556,13 +2556,12 @@ function doGift(){
     const msg=document.getElementById('gMsg').value.trim();
     const from_=document.getElementById('gFrom').value.trim();
     const baseName=baby?'BabyHarmony_'+baby.replace(/\s+/g,'_'):'BabyHarmony';
-    // Build self-contained HTML gift page (animation + embedded audio)
-    const b64=bufToBase64(wav);
-    const html=buildGiftPageHTML(b64,baby,msg,from_);
-    _giftHtmlBlob=new File([html],baseName+'.html',{type:'text/html'});
     _giftWavBlob=new File([wav],baseName+'.wav',{type:'audio/wav'});
-    // Upload HTML gift page to Cloudinary (raw) → shareable link
+    // Upload WAV first → get URL → embed URL in HTML (avoids 2MB base64 limit on iOS)
     try{
+      const wavUrl = await uploadToCloudinary(_giftWavBlob, baseName+'.wav');
+      const html=buildGiftPageHTML(wavUrl,baby,msg,from_);
+      _giftHtmlBlob=new File([html],baseName+'.html',{type:'text/html'});
       const giftPageUrl = await uploadToCloudinary(_giftHtmlBlob, baseName+'.html');
       _audioUrl = giftPageUrl; // primary share URL = the gift page
       // Show gift link
