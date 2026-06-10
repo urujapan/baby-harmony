@@ -364,7 +364,7 @@ input[type=range]{flex:1;accent-color:#D4537E;}
       </div>
       <div class="ginput-group" style="flex:1;margin-bottom:0;">
         <label class="ginput-label" style="color:#bbb;">📅 日付（任意）</label>
-        <input class="ginput" type="date" id="gDate" oninput="refreshPreview()" style="border-color:#eee;color:#aaa;">
+        <input class="ginput" type="text" id="gDate" placeholder="e.g. 2025.6.10" oninput="refreshPreview()" style="border-color:#eee;color:#aaa;">
       </div>
     </div>
     <div class="divider"></div>
@@ -437,21 +437,21 @@ const TOAST={en:{loaded:'Analyzed! Adjust loop region if needed.',gen:'Generatin
 const LL={en:'English',ja:'日本語',zh:'中文','zh-TW':'繁體',ko:'한국어',es:'Español',fr:'Français',de:'Deutsch',pt:'Português',hi:'हिन्दी',id:'Indonesia',it:'Italiano',th:'ไทย',vi:'Tiếng Việt',ru:'Русский'};
 // Gift section labels: [baby_label, baby_ph, msg_label, msg_ph, from_label, from_ph, date_label]
 const GT={
-  en:['👶 Baby\'s Name','e.g. Emma','💬 Message','e.g. We love you so much ♡','— From (optional)','e.g. Mom & Dad','📅 Date (optional)'],
-  ja:['👶 赤ちゃんのお名前','例：さくら、Emma','💬 メッセージ','例：生まれてきてくれてありがとう ♡','— From（任意）','例：ママとパパより','📅 日付（任意）'],
-  zh:['👶 宝宝的名字','例：Emma','💬 留言','例：宝贝，我们爱你 ♡','— 来自（可选）','例：爸爸妈妈','📅 日期（可选）'],
-  'zh-TW':['👶 寶寶的名字','例：Emma','💬 留言','例：寶貝，我們愛你 ♡','— 來自（可選）','例：爸爸媽媽','📅 日期（可選）'],
-  ko:['👶 아기 이름','예: 민준, Emma','💬 메시지','예: 태어나줘서 고마워 ♡','— 보내는 사람 (선택)','예: 엄마 & 아빠','📅 날짜 (선택)'],
-  es:['👶 Nombre del bebé','ej. Emma','💬 Mensaje','ej. Te amamos tanto ♡','— De (opcional)','ej. Mamá y Papá','📅 Fecha (opcional)'],
-  fr:['👶 Prénom du bébé','ex. Emma','💬 Message','ex. On t\'aime tellement ♡','— De (facultatif)','ex. Maman & Papa','📅 Date (facultatif)'],
-  de:['👶 Name des Babys','z.B. Emma','💬 Nachricht','z.B. Wir lieben dich so sehr ♡','— Von (optional)','z.B. Mama & Papa','📅 Datum (optional)'],
-  pt:['👶 Nome do bebê','ex. Emma','💬 Mensagem','ex. Te amamos muito ♡','— De (opcional)','ex. Mamãe & Papai','📅 Data (opcional)'],
-  hi:['👶 बच्चे का नाम','जैसे: Emma','💬 संदेश','जैसे: हम तुमसे बहुत प्यार करते हैं ♡','— से (वैकल्पिक)','जैसे: माँ और पापा','📅 तारीख (वैकल्पिक)'],
-  id:['👶 Nama Bayi','mis. Emma','💬 Pesan','mis. Kami sangat mencintaimu ♡','— Dari (opsional)','mis. Mama & Papa','📅 Tanggal (opsional)'],
-  it:['👶 Nome del bambino','es. Emma','💬 Messaggio','es. Ti vogliamo tanto bene ♡','— Da (facoltativo)','es. Mamma & Papà','📅 Data (facoltativo)'],
-  th:['👶 ชื่อลูกน้อย','เช่น Emma','💬 ข้อความ','เช่น รักหนูมากเลยนะ ♡','— จาก (ไม่บังคับ)','เช่น แม่ & พ่อ','📅 วันที่ (ไม่บังคับ)'],
-  vi:['👶 Tên của bé','ví dụ: Emma','💬 Lời nhắn','ví dụ: Ba mẹ yêu con rất nhiều ♡','— Từ (tùy chọn)','ví dụ: Ba & Mẹ','📅 Ngày (tùy chọn)'],
-  ru:['👶 Имя малыша','напр. Маша','💬 Сообщение','напр. Мы так тебя любим ♡','— От (необязательно)','напр. Мама и Папа','📅 Дата (необязательно)']
+  en:['👶 Baby\'s Name','e.g. Emma','💬 Message','e.g. We love you so much ♡','— From (optional)','e.g. Mom & Dad','📅 Date (optional)','e.g. 2025.6.10'],
+  ja:['👶 赤ちゃんのお名前','例：さくら、Emma','💬 メッセージ','例：生まれてきてくれてありがとう ♡','— From（任意）','例：ママとパパより','📅 日付（任意）','例：2025.6.10'],
+  zh:['👶 宝宝的名字','例：Emma','💬 留言','例：宝贝，我们爱你 ♡','— 来自（可选）','例：爸爸妈妈','📅 日期（可选）','例：2025.6.10'],
+  'zh-TW':['👶 寶寶的名字','例：Emma','💬 留言','例：寶貝，我們愛你 ♡','— 來自（可選）','例：爸爸媽媽','📅 日期（可選）','例：2025.6.10'],
+  ko:['👶 아기 이름','예: 민준, Emma','💬 메시지','예: 태어나줘서 고마워 ♡','— 보내는 사람 (선택)','예: 엄마 & 아빠','📅 날짜 (선택)','예: 2025.6.10'],
+  es:['👶 Nombre del bebé','ej. Emma','💬 Mensaje','ej. Te amamos tanto ♡','— De (opcional)','ej. Mamá y Papá','📅 Fecha (opcional)','ej. 2025.6.10'],
+  fr:['👶 Prénom du bébé','ex. Emma','💬 Message','ex. On t\'aime tellement ♡','— De (facultatif)','ex. Maman & Papa','📅 Date (facultatif)','ex. 2025.6.10'],
+  de:['👶 Name des Babys','z.B. Emma','💬 Nachricht','z.B. Wir lieben dich so sehr ♡','— Von (optional)','z.B. Mama & Papa','📅 Datum (optional)','z.B. 2025.6.10'],
+  pt:['👶 Nome do bebê','ex. Emma','💬 Mensagem','ex. Te amamos muito ♡','— De (opcional)','ex. Mamãe & Papai','📅 Data (opcional)','ex. 2025.6.10'],
+  hi:['👶 बच्चे का नाम','जैसे: Emma','💬 संदेश','जैसे: हम तुमसे बहुत प्यार करते हैं ♡','— से (वैकल्पिक)','जैसे: माँ और पापा','📅 तारीख (वैकल्पिक)','जैसे: 2025.6.10'],
+  id:['👶 Nama Bayi','mis. Emma','💬 Pesan','mis. Kami sangat mencintaimu ♡','— Dari (opsional)','mis. Mama & Papa','📅 Tanggal (opsional)','mis. 2025.6.10'],
+  it:['👶 Nome del bambino','es. Emma','💬 Messaggio','es. Ti vogliamo tanto bene ♡','— Da (facoltativo)','es. Mamma & Papà','📅 Data (facoltativo)','es. 2025.6.10'],
+  th:['👶 ชื่อลูกน้อย','เช่น Emma','💬 ข้อความ','เช่น รักหนูมากเลยนะ ♡','— จาก (ไม่บังคับ)','เช่น แม่ & พ่อ','📅 วันที่ (ไม่บังคับ)','เช่น 2025.6.10'],
+  vi:['👶 Tên của bé','ví dụ: Emma','💬 Lời nhắn','ví dụ: Ba mẹ yêu con rất nhiều ♡','— Từ (tùy chọn)','ví dụ: Ba & Mẹ','📅 Ngày (tùy chọn)','ví dụ: 2025.6.10'],
+  ru:['👶 Имя малыша','напр. Маша','💬 Сообщение','напр. Мы так тебя любим ♡','— От (необязательно)','напр. Мама и Папа','📅 Дата (необязательно)','напр. 2025.6.10']
 };
 const DRAG={en:'Drag to fine-tune',ja:'ドラッグで微調整',zh:'拖动以微调','zh-TW':'拖動以微調',ko:'드래그로 미세 조정',es:'Arrastra para ajustar',fr:'Glisser pour ajuster',de:'Ziehen zum Anpassen',pt:'Arraste para ajustar',hi:'ड्रैग करके समायोजित करें',id:'Seret untuk menyesuaikan',it:'Trascina per regolare',th:'ลากเพื่อปรับ',vi:'Kéo để tinh chỉnh',ru:'Перетащите для настройки'};
 const PREV={en:'Check heartbeat',ja:'心音を確認',zh:'确认心音','zh-TW':'確認心音',ko:'심음 확인',es:'Verificar latido',fr:'Vérifier le battement',de:'Herzschlag prüfen',pt:'Verificar batimento',hi:'दिल की धड़कन जांचें',id:'Periksa detak jantung',it:'Verifica battito',th:'ตรวจสอบเสียงหัวใจ',vi:'Kiểm tra nhịp tim',ru:'Проверить сердцебиение'};
@@ -502,6 +502,7 @@ function L(l){
   document.getElementById('gBaby').placeholder=gt[1];
   document.getElementById('gMsg').placeholder=gt[3];
   document.getElementById('gFrom').placeholder=gt[5];
+  document.getElementById('gDate').placeholder=gt[7]||'e.g. 2025.6.10';
   refreshPreview(); updateNP();
 }
 
@@ -517,9 +518,7 @@ function giftFilename(){
   return base+'.wav';
 }
 function fmtDate(val){
-  if(!val) return '';
-  const [y,m,d]=val.split('-');
-  return y+'.'+m+'.'+d;
+  return val ? val.trim() : '';
 }
 function refreshPreview(){
   document.getElementById('pTitle').textContent=giftTitle();
